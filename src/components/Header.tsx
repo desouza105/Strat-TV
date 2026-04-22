@@ -5,7 +5,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { Download, ChevronDown, Globe, Film, MapPin, Search, LayoutGrid, Radio, Grid2x2, Flame, Lock, ShieldCheck, X as XIcon } from 'lucide-react';
+import { Download, ChevronDown, Globe, Film, MapPin, Search, LayoutGrid, Radio, Grid2x2, Flame, Lock, ShieldCheck, Tv, AlertCircle, X as XIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { PORTAL_SOURCES, PlaylistSource } from '../constants/portal_data';
 import { useTheme } from '../context/ThemeContext';
@@ -42,8 +42,14 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
   const [isPasscodeOpen, setIsPasscodeOpen] = useState(false);
   const [passcodeInput, setPasscodeInput] = useState('');
   const [passcodeError, setPasscodeError] = useState(false);
-
   const SECRET_CODE = 'GbLEWA';
+
+  // Canal+ State
+  const [isCanalOpen, setIsCanalOpen] = useState(false);
+  const [canalInput, setCanalInput] = useState('');
+  const [canalError, setCanalError] = useState(false);
+  const CANAL_SECRET = 'Th3 fAc1liTat0R';
+  const CANAL_DOWNLOAD_URL = 'https://drive.google.com/uc?export=download&id=1Yg7g2xJXt6oIV04YME4OYAEMqgHBPYZO';
 
   const filteredPortals = useMemo(() => {
     return PORTAL_SOURCES.filter(s => 
@@ -76,7 +82,19 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
     } else {
       setPasscodeError(true);
       setPasscodeInput('');
-      // Shake animation or similar feedback could go here
+    }
+  };
+
+  const handleCanalSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (canalInput === CANAL_SECRET) {
+      window.open(CANAL_DOWNLOAD_URL, '_blank');
+      setIsCanalOpen(false);
+      setCanalInput('');
+      setCanalError(false);
+    } else {
+      setCanalError(true);
+      setCanalInput('');
     }
   };
 
@@ -262,6 +280,15 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
               XXX ADULT
               {isLoading && isAdultActive && <div className="w-3 h-3 border-2 border-rose-500 border-t-transparent rounded-full animate-spin ml-1" />}
             </button>
+
+            <button
+              onClick={() => setIsCanalOpen(true)}
+              disabled={isLoading}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 border bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-white"
+            >
+              <Tv size={14} className="text-zinc-500" />
+              CANAL+
+            </button>
           </div>
         </div>
 
@@ -351,6 +378,13 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
             >
               <Flame size={18} />
             </button>
+            <button
+              onClick={() => setIsCanalOpen(true)}
+              disabled={isLoading}
+              className="p-2 rounded-lg transition-all active:scale-95 border bg-zinc-900 border-zinc-800 text-zinc-500"
+            >
+              <Tv size={18} />
+            </button>
           </div>
 
           <div className="hidden lg:flex items-center gap-4">
@@ -429,8 +463,8 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
                     </p>
                   </div>
 
-                  <form onSubmit={handlePasscodeSubmit} className="w-full space-y-8">
-                    <div className="space-y-4 relative">
+                  <form onSubmit={handlePasscodeSubmit} className="w-full flex flex-col gap-8">
+                    <div className="flex flex-col gap-4">
                       <input 
                         autoFocus
                         type="password"
@@ -443,18 +477,21 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
                         className={`w-full bg-white/5 border-2 ${passcodeError ? 'border-rose-600 text-rose-600' : 'border-white/5 focus:border-rose-600/40'} rounded-2xl py-6 px-4 text-center text-4xl font-black tracking-[0.4em] outline-none transition-all placeholder:text-zinc-800 shadow-inner`}
                       />
                       
-                      <AnimatePresence mode="wait">
-                        {passcodeError && (
-                          <motion.div 
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.9 }}
-                            className="absolute -bottom-10 left-0 w-full flex items-center justify-center gap-2 text-rose-600"
-                          >
-                            <span className="text-[10px] font-black uppercase tracking-[0.4em]">Code Invalide</span>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
+                      <div className="h-4 flex items-center justify-center">
+                        <AnimatePresence mode="wait">
+                          {passcodeError && (
+                            <motion.div 
+                              initial={{ opacity: 0, y: -10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: -10 }}
+                              className="flex items-center gap-2 text-rose-600"
+                            >
+                              <AlertCircle size={12} />
+                              <span className="text-[10px] font-black uppercase tracking-[0.4em]">Code de sécurité invalide</span>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
                     </div>
 
                     <button 
@@ -469,6 +506,110 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
                   <div className="flex items-center gap-3 opacity-20">
                     <div className="w-8 h-[1px] bg-white" />
                     <p className="text-[9px] text-white font-black uppercase tracking-widest">Parental Protection</p>
+                    <div className="w-8 h-[1px] bg-white" />
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          )}
+
+          {isCanalOpen && (
+            <div className="fixed inset-0 z-[999999] flex items-center justify-center w-screen h-screen">
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setIsCanalOpen(false)}
+                className="absolute inset-0 bg-black/90 backdrop-blur-2xl"
+              />
+              
+              <motion.div 
+                initial={{ scale: 0.8, opacity: 0, y: 20 }}
+                animate={{ 
+                  scale: 1, 
+                  opacity: 1, 
+                  y: 0,
+                  x: canalError ? [0, -15, 15, -15, 15, 0] : 0
+                }}
+                exit={{ scale: 0.8, opacity: 0, y: 20 }}
+                transition={{ 
+                  type: "spring", 
+                  damping: 25, 
+                  stiffness: 400,
+                  x: { duration: 0.4 } 
+                }}
+                className="relative z-10 w-[min(440px,90%)] bg-[#080808] border border-white/10 rounded-[48px] p-10 md:p-14 shadow-[0_50px_100px_rgba(0,0,0,1)] flex flex-col items-center"
+              >
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-brand-primary to-transparent" />
+                
+                <button 
+                  onClick={() => setIsCanalOpen(false)}
+                  className="absolute top-8 right-8 p-3 rounded-full hover:bg-white/5 text-zinc-600 transition-all active:scale-90 z-20"
+                  type="button"
+                >
+                  <XIcon size={24} />
+                </button>
+
+                <div className="flex flex-col items-center gap-10 w-full">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-brand-primary/20 blur-3xl rounded-full scale-150 animate-pulse" />
+                    <div className="relative w-24 h-24 bg-gradient-to-br from-brand-primary/20 to-zinc-900 rounded-[32px] flex items-center justify-center text-brand-secondary border border-brand-primary/20">
+                      <Tv size={44} strokeWidth={1.5} />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4 text-center">
+                    <h2 className="text-3xl font-light text-white tracking-tight uppercase leading-none italic">
+                      Accès <span className="text-brand-secondary font-black not-italic">CANAL+</span>
+                    </h2>
+                    <p className="text-[13px] text-zinc-500 leading-relaxed max-w-[280px] font-medium">
+                      Saisissez le code secret pour déverrouiller le téléchargement.
+                    </p>
+                  </div>
+
+                  <form onSubmit={handleCanalSubmit} className="w-full flex flex-col gap-8">
+                    <div className="flex flex-col gap-4">
+                      <input 
+                        autoFocus
+                        type="password"
+                        placeholder="••••••••"
+                        value={canalInput}
+                        onChange={(e) => {
+                          setCanalInput(e.target.value);
+                          setCanalError(false);
+                        }}
+                        className={`w-full bg-white/5 border-2 ${canalError ? 'border-brand-primary text-brand-secondary' : 'border-white/5 focus:border-brand-primary/40'} rounded-2xl py-6 px-4 text-center text-2xl font-black outline-none transition-all placeholder:text-zinc-800 shadow-inner`}
+                      />
+                      
+                      <div className="h-4 flex items-center justify-center">
+                        <AnimatePresence mode="wait">
+                          {canalError && (
+                            <motion.div 
+                              initial={{ opacity: 0, y: -10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: -10 }}
+                              className="flex items-center gap-2 text-brand-primary"
+                            >
+                              <AlertCircle size={12} />
+                              <span className="text-[10px] font-black uppercase tracking-[0.4em]">Code de validation invalide</span>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    </div>
+
+                    <button 
+                      type="submit"
+                      className="w-full bg-brand-primary hover:brightness-110 text-white text-[11px] font-black uppercase tracking-[0.4em] py-5 rounded-2xl transition-all active:scale-95 shadow-2xl shadow-brand-primary/20 flex items-center justify-center gap-3 group relative overflow-hidden"
+                    >
+                      <Download size={20} className="group-hover:scale-110 transition-transform" />
+                      VALIDER ET TÉLÉCHARGER
+                    </button>
+                  </form>
+
+                  <div className="flex items-center gap-3 opacity-20">
+                    <div className="w-8 h-[1px] bg-white" />
+                    <p className="text-[9px] text-white font-black uppercase tracking-widest">Secured Access</p>
                     <div className="w-8 h-[1px] bg-white" />
                   </div>
                 </div>
