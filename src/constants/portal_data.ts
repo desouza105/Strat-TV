@@ -149,5 +149,6 @@ export const PORTAL_SOURCES: PlaylistSource[] = [
   { name: 'Films', url: 'https://ip-tv.app/Movies', category: 'Genre' },
   { name: 'Musique', url: 'https://ip-tv.app/Music', category: 'Genre' },
   { name: 'News', url: 'https://ip-tv.app/News', category: 'Genre' },
-  { name: 'Sport', url: 'https://ip-tv.app/Sports', category: 'Genre' }
+  { name: 'Sport', url: 'https://ip-tv.app/Sports', category: 'Genre' },
+  { name: 'XXX ADULT', url: 'https://ip-tv.app/XXX', category: 'Genre' }
 ];
