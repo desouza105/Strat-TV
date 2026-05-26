@@ -251,7 +251,7 @@ export default function App() {
   }, []);
 
   return (
-    <div className="flex flex-col h-screen bg-app-bg text-app-text transition-colors duration-300 selection:bg-brand-primary/30">
+    <div className="flex flex-col h-screen bg-app-bg text-app-text transition-colors duration-300 selection:bg-white/20">
       <AnimatePresence>
         {isAppLoading && (
           <SplashScreen onComplete={() => setIsAppLoading(false)} />
@@ -277,7 +277,7 @@ export default function App() {
         />
 
         <section className="flex-1 flex flex-col items-center justify-center p-4 md:p-8 bg-app-bg relative overflow-y-auto custom-scrollbar transition-colors duration-300">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-brand-primary/5 blur-[120px] rounded-full pointer-events-none" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-white/3 blur-[120px] rounded-full pointer-events-none" />
 
           <AnimatePresence mode="wait">
             {isSplitView ? (
@@ -286,6 +286,7 @@ export default function App() {
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.98 }}
+                transition={{ type: "spring", bounce: 0, duration: 0.5 }}
                 className={`grid gap-6 w-full max-w-7xl z-10 ${
                   splitChannels.length <= 2 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 md:grid-cols-2'
                 }`}
@@ -297,7 +298,7 @@ export default function App() {
                       key={idx}
                       onClick={() => setActiveSplitIndex(idx)}
                       className={`relative flex flex-col rounded-2xl overflow-hidden border-2 transition-all group ${
-                        activeSplitIndex === idx ? 'border-brand-primary ring-4 ring-brand-primary/10 shadow-2xl' : 'border-app-border'
+                        activeSplitIndex === idx ? 'border-white ring-4 ring-white/10 shadow-2xl' : 'border-app-border'
                       } ${!channel ? 'bg-app-card/50 border-dashed justify-center items-center cursor-pointer hover:bg-app-card' : 'bg-app-card'}`}
                     >
                       {channel ? (
@@ -349,6 +350,7 @@ export default function App() {
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.98 }}
+                transition={{ type: "spring", bounce: 0, duration: 0.5 }}
                 className="w-full max-w-6xl z-10"
               >
                 <VideoPlayer 
@@ -364,7 +366,7 @@ export default function App() {
                       {selectedChannel.name}
                     </h2>
                     <div className="flex items-center gap-4 text-sm font-bold text-app-text-muted uppercase tracking-widest">
-                       <span className="flex items-center gap-2 text-brand-secondary"><Globe size={14} /> DIRECT</span>
+                       <span className="flex items-center gap-2 text-white"><Globe size={14} /> DIRECT</span>
                        <span className="w-1.5 h-1.5 rounded-full bg-app-border" />
                        <span className="flex items-center gap-2"><MapPin size={14} className="text-app-text-muted" /> {playlistName || 'INTERNATIONAL'}</span>
                        <span className="w-1.5 h-1.5 rounded-full bg-app-border" />
@@ -373,18 +375,10 @@ export default function App() {
                   </div>
                   
                   <div className="flex gap-2">
-                    <button className="bg-app-card hover:bg-zinc-800 dark:hover:bg-zinc-800 p-2.5 rounded-full transition-colors text-app-text flex items-center justify-center overflow-hidden border border-app-border">
-                       <img 
-                         src="https://image.noelshack.com/fichiers/2026/17/2/1776790858-1774711504-w-1920-quality-90-fit-scale-down.png" 
-                         alt="Action Logo" 
-                         className="w-5 h-5 object-contain"
-                         referrerPolicy="no-referrer"
-                       />
-                    </button>
-                    <button className="bg-app-card hover:bg-zinc-800 px-6 py-2 rounded-xl text-sm font-bold border border-app-border text-app-text transition-all active:scale-95">
+                    <button className="bg-app-card hover:bg-zinc-800 px-6 py-2 rounded-xl text-sm font-bold text-app-text transition-all active:scale-95">
                       REPORT
                     </button>
-                    <button className="bg-gradient-to-r from-brand-primary to-brand-secondary hover:opacity-90 px-8 py-2 rounded-xl text-sm font-bold transition-all active:scale-95 shadow-lg shadow-brand-primary/20">
+                    <button className="bg-white hover:bg-zinc-200 text-black px-8 py-2 rounded-xl text-sm font-bold transition-all active:scale-95 shadow-lg shadow-white/10">
                       LIVE
                     </button>
                   </div>
@@ -394,12 +388,13 @@ export default function App() {
               <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
+                transition={{ type: "spring", bounce: 0, duration: 0.6 }}
                 className="text-center max-w-md z-10"
               >
                 {error ? (
                   <div className="space-y-6">
-                    <div className="w-20 h-20 bg-brand-primary/10 rounded-full flex items-center justify-center mx-auto border border-brand-primary/20">
-                      <WifiOff className="text-brand-primary w-10 h-10" />
+                    <div className="w-20 h-20 bg-white/10 rounded-full flex items-center justify-center mx-auto border border-white/20">
+                      <WifiOff className="text-white w-10 h-10" />
                     </div>
                     <div className="space-y-2">
                       <h3 className="text-2xl font-black uppercase text-white tracking-tight">Erreur de lecture</h3>
@@ -408,16 +403,13 @@ export default function App() {
                   </div>
                 ) : (
                   <div className="space-y-8">
-                    <div className="relative">
-                      <div className="w-24 h-24 bg-gradient-to-br from-brand-primary/20 to-brand-secondary/20 rounded-full flex items-center justify-center mx-auto border border-brand-primary/20 relative z-10 text-brand-secondary">
-                        <Tv className="w-12 h-12" />
-                      </div>
-                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-brand-primary/20 blur-[60px] rounded-full animate-pulse" />
-                    </div>
-                    <div className="space-y-3">
-                      <h3 className="text-3xl md:text-4xl font-normal tracking-tighter text-app-text">Strat TV</h3>
-                      <p className="text-app-text-muted text-sm leading-relaxed max-w-xs mx-auto">
-                        Choisissez un pays ou une catégorie dans le menu supérieur pour accéder à vos chaînes préférées.
+                    <div className="space-y-4">
+                      <h3 className="text-3xl md:text-5xl font-normal tracking-tighter text-app-text">
+                        Moody<span className="font-serif italic text-app-text-muted/50">.</span>
+                      </h3>
+                      <p className="text-app-text-muted text-base md:text-lg leading-relaxed max-w-sm mx-auto font-light">
+                        Choisissez un pays ou une catégorie dans le menu supérieur pour{' '}
+                        <span className="font-serif italic text-white/80 tracking-wide font-normal">accéder à vos chaînes préférées</span>.
                       </p>
                     </div>
                   </div>
@@ -440,7 +432,7 @@ export default function App() {
           border-radius: 10px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: var(--color-brand-secondary);
+          background: #ffffff;
         }
         .scrollbar-none::-webkit-scrollbar {
           display: none;

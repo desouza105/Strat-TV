@@ -60,7 +60,7 @@ export default function Sidebar({
           <input
             type="text"
             placeholder="Rechercher une chaîne..."
-            className="w-full bg-app-bg border border-app-border rounded-xl py-2.5 pl-10 pr-4 text-sm text-app-text focus:ring-2 focus:ring-brand-primary/50 outline-none transition-all placeholder:text-zinc-600"
+            className="w-full bg-app-bg border border-app-border rounded-xl py-2.5 pl-10 pr-4 text-sm text-app-text focus:ring-2 focus:ring-white/30 outline-none transition-all placeholder:text-zinc-600"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -73,21 +73,21 @@ export default function Sidebar({
           </div>
           <button 
             onClick={() => setShowOnlyWorking(!showOnlyWorking)}
-            className={`text-[10px] font-black px-2 py-0.5 rounded transition-colors uppercase tracking-widest border ${
+            className={`text-[10px] font-black px-2 py-0.5 rounded transition-colors uppercase tracking-widest ${
               showOnlyWorking 
-                ? 'bg-brand-primary/10 text-brand-secondary border-brand-primary/30' 
-                : 'bg-zinc-800 text-zinc-500 border-transparent'
+                ? 'bg-white/10 text-white' 
+                : 'bg-zinc-800 text-zinc-500'
             }`}
           >
             {showOnlyWorking ? 'ON' : 'OFF'}
           </button>
         </div>
 
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+        <div className="flex flex-wrap items-center gap-2 pb-2">
           <button
             onClick={() => setFilter('all')}
             className={`px-3 py-1 rounded-full text-xs whitespace-nowrap transition-colors ${
-              filter === 'all' ? 'bg-brand-primary text-white shadow-lg shadow-brand-primary/20' : 'bg-app-card hover:bg-zinc-800 dark:hover:bg-zinc-800 text-app-text-muted hover:text-app-text border border-app-border'
+              filter === 'all' ? 'bg-white text-black shadow-lg shadow-white/10' : 'bg-app-card hover:bg-zinc-800 dark:hover:bg-zinc-800 text-app-text-muted hover:text-app-text'
             }`}
           >
             Toutes
@@ -97,7 +97,7 @@ export default function Sidebar({
               key={group}
               onClick={() => setFilter(group)}
               className={`px-3 py-1 rounded-full text-xs whitespace-nowrap transition-colors ${
-                filter === group ? 'bg-brand-primary text-white shadow-lg shadow-brand-primary/20' : 'bg-app-card hover:bg-zinc-800 dark:hover:bg-zinc-800 text-app-text-muted hover:text-app-text border border-app-border'
+                filter === group ? 'bg-white text-black shadow-lg shadow-white/10' : 'bg-app-card hover:bg-zinc-800 dark:hover:bg-zinc-800 text-app-text-muted hover:text-app-text'
               }`}
             >
               {group}
@@ -109,7 +109,7 @@ export default function Sidebar({
       <div className="flex-1 overflow-y-auto custom-scrollbar p-2">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center h-40 gap-3">
-            <div className="w-8 h-8 border-2 border-brand-secondary border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin" />
             <p className="text-zinc-500 text-sm">Chargement...</p>
           </div>
         ) : filteredChannels.length > 0 ? (
@@ -122,13 +122,13 @@ export default function Sidebar({
                   <motion.button
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: Math.min(idx * 0.02, 1) }}
+                    transition={{ delay: Math.min(idx * 0.02, 1), type: "spring", bounce: 0, duration: 0.4 }}
                     key={channel.id + idx}
                     onClick={() => onChannelSelect(channel)}
                     className={`flex items-center gap-3 p-3 rounded-xl transition-all text-left group ${
                       selectedChannel?.url === channel.url
-                        ? 'bg-brand-primary/10 border border-brand-primary/30 text-app-text'
-                        : 'hover:bg-zinc-800/10 dark:hover:bg-zinc-800/50 text-app-text-muted border border-transparent'
+                        ? 'bg-white/10 text-app-text'
+                        : 'hover:bg-zinc-800/10 dark:hover:bg-zinc-800/50 text-app-text-muted'
                     }`}
                   >
                     <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center relative">
@@ -149,8 +149,8 @@ export default function Sidebar({
                       
                       {/* Health Indicator */}
                       <div className={`absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full border border-zinc-900 ${
-                        status === 'active' ? 'bg-green-500' : 
-                        status === 'dead' ? 'bg-brand-primary' : 'bg-yellow-500 animate-pulse'
+                        status === 'active' ? 'bg-white' : 
+                        status === 'dead' ? 'bg-zinc-600' : 'bg-zinc-400 animate-pulse'
                       }`} />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -162,7 +162,7 @@ export default function Sidebar({
                       </p>
                     </div>
                     {selectedChannel?.url === channel.url && (
-                      <div className="w-1.5 h-1.5 rounded-full bg-brand-secondary animate-pulse shadow-[0_0_8px_rgba(173,1,185,0.8)]" />
+                      <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse shadow-[0_0_8px_rgba(255,255,255,0.5)]" />
                     )}
                   </motion.button>
                 );
@@ -181,7 +181,7 @@ export default function Sidebar({
         <div className="flex justify-between items-center text-[10px] text-app-text-muted font-bold uppercase tracking-widest">
           <span>{filteredChannels.length} CHAÎNES</span>
           <span className="flex items-center gap-1 text-app-text-muted">
-            LIVE <div className="w-1 h-1 rounded-full bg-green-500" />
+            LIVE <div className="w-1 h-1 rounded-full bg-white" />
           </span>
         </div>
         <div className="text-[10px] text-app-text-muted italic text-center border-t border-app-border pt-2 flex items-center justify-center gap-1.5 opacity-80 hover:opacity-100 transition-opacity">

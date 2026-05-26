@@ -10,6 +10,26 @@ export interface PlaylistSource {
   category: 'Country' | 'Language' | 'Genre';
 }
 
+export const getCustomPlaylists = (): PlaylistSource[] => {
+  try {
+    const saved = localStorage.getItem('moody-custom-playlists');
+    return saved ? JSON.parse(saved) : [];
+  } catch { return []; }
+};
+
+export const saveCustomPlaylist = (playlist: PlaylistSource) => {
+  const current = getCustomPlaylists();
+  const filtered = current.filter(p => p.url !== playlist.url);
+  const next = [playlist, ...filtered].slice(0, 10);
+  localStorage.setItem('moody-custom-playlists', JSON.stringify(next));
+};
+
+export const deleteCustomPlaylist = (url: string) => {
+  const current = getCustomPlaylists();
+  localStorage.setItem('moody-custom-playlists', 
+    JSON.stringify(current.filter(p => p.url !== url)));
+};
+
 export const PORTAL_SOURCES: PlaylistSource[] = [
   { name: 'Afghanistan', url: 'https://ip-tv.app/Afghanistan', code: 'af', category: 'Country' },
   { name: 'Albanie', url: 'https://ip-tv.app/Albania', code: 'al', category: 'Country' },

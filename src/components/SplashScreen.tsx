@@ -36,12 +36,12 @@ export default function SplashScreen({ onComplete }: { onComplete: () => void })
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 0.5, ease: "easeOut" }}
+          transition={{ type: "spring", bounce: 0, duration: 0.6 }}
           className="relative"
         >
           <img 
-            src="https://image.noelshack.com/fichiers/2026/17/2/1776790858-1774711504-w-1920-quality-90-fit-scale-down.png" 
-            alt="Strat TV Logo" 
+            src="https://image.noelshack.com/fichiers/2026/22/2/1779827198-icon-moody.png" 
+            alt="Moody Icon" 
             className="w-24 h-24 object-contain brightness-110"
             referrerPolicy="no-referrer"
           />
@@ -52,15 +52,15 @@ export default function SplashScreen({ onComplete }: { onComplete: () => void })
           <motion.h1 
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.2, duration: 0.5 }}
+            transition={{ delay: 0.1, type: "spring", bounce: 0, duration: 0.6 }}
             className="text-3xl font-normal text-app-text tracking-tighter"
           >
-            Strat <span className="text-brand-secondary">TV</span>
+            Moody
           </motion.h1>
           <motion.p 
             initial={{ y: 10, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.4, duration: 0.5 }}
+            transition={{ delay: 0.2, type: "spring", bounce: 0, duration: 0.6 }}
             className="text-[10px] font-black uppercase tracking-[0.3em] text-app-text-muted mt-2"
           >
             Le direct nouvelle génération
@@ -71,7 +71,7 @@ export default function SplashScreen({ onComplete }: { onComplete: () => void })
         <div className="w-full space-y-4">
           <div className="h-1 w-full bg-app-border rounded-full overflow-hidden">
             <motion.div 
-              className="h-full bg-gradient-to-r from-brand-primary to-brand-secondary shadow-[0_0_10px_rgba(173,1,185,0.5)]"
+              className="h-full bg-white shadow-[0_0_10px_rgba(255,255,255,0.3)]"
               style={{ width: `${progress}%` }}
               transition={{ ease: "linear" }}
             />

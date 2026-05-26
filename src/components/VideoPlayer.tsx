@@ -278,6 +278,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                         initial={{ opacity: 0, y: 10, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                        transition={{ type: "spring", bounce: 0, duration: 0.4 }}
                         className="absolute bottom-full right-0 mb-2 w-32 bg-app-card border border-app-border rounded-xl shadow-2xl overflow-hidden z-50"
                       >
                         <div className="p-1 uppercase text-[10px] font-black text-app-text-muted border-b border-app-border text-center bg-app-bg/50">
