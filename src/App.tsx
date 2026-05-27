@@ -212,14 +212,20 @@ export default function App() {
     setCurrentPlaylistUrl(url);
     setChannelStatus({}); // Reset status
     try {
-      // Use our internal proxy to avoid CORS issues
-      const proxyUrl = `/api/proxy?url=${encodeURIComponent(url)}`;
-      let response = await fetch(proxyUrl);
-      
-      if (!response.ok) {
-        // Fallback to direct fetch if proxy fails for some reason
+      let response;
+      if (url.startsWith('blob:')) {
         response = await fetch(url);
-        if (!response.ok) throw new Error('Impossible de charger la playlist IPTV');
+        if (!response.ok) throw new Error('Impossible de lire le fichier local');
+      } else {
+        // Use our internal proxy to avoid CORS issues for remote URLs
+        const proxyUrl = `/api/proxy?url=${encodeURIComponent(url)}`;
+        response = await fetch(proxyUrl);
+        
+        if (!response.ok) {
+          // Fallback to direct fetch if proxy fails for some reason
+          response = await fetch(url);
+          if (!response.ok) throw new Error('Impossible de charger la playlist IPTV');
+        }
       }
 
       const content = await response.text();

@@ -113,7 +113,7 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
       setImportError('Veuillez entrer une URL valide');
       return;
     }
-    if (!url.startsWith('http')) {
+    if (!url.startsWith('http') && !url.startsWith('blob:')) {
       setImportError('L\'URL doit commencer par http:// ou https://');
       return;
     }
@@ -144,6 +144,7 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
       handleImportSubmit(blobUrl, name);
     };
     reader.readAsText(file);
+    e.target.value = ''; // Reset to allow selecting the same file again
   };
 
   return (

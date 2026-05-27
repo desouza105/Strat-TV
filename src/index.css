@@ -1,8 +1,7 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Outfit", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Roboto", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Playfair Display", ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
   --color-brand-primary: #ffffff;
   --color-brand-secondary: #a1a1aa;
@@ -30,6 +29,21 @@
 
 @layer base {
   body {
-    @apply font-sans bg-[var(--color-app-bg)] text-[var(--color-app-text)] transition-colors duration-300;
+    font-family: var(--font-sans);
+    background-color: var(--color-app-bg);
+    color: var(--color-app-text);
+    transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 300ms;
+    letter-spacing: 0.01em;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer utilities {
+  .font-black.tracking-widest {
+    font-weight: 900;
+    letter-spacing: 0.1em;
   }
 }
