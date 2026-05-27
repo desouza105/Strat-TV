@@ -5,7 +5,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { Download, ChevronDown, Globe, Film, MapPin, Search, LayoutGrid, Radio, Grid2x2, Flame, Lock, ShieldCheck, Tv, AlertCircle, Plus, Trash2, Link, FileUp, X as XIcon } from 'lucide-react';
+import { Download, ChevronDown, Globe, Film, MapPin, Search, LayoutGrid, Radio, Grid2x2, Flame, Lock, ShieldCheck, Tv, AlertCircle, Plus, Trash2, Link, FileUp, X as XIcon, BarChart2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { PORTAL_SOURCES, PlaylistSource, getCustomPlaylists, saveCustomPlaylist, deleteCustomPlaylist } from '../constants/portal_data';
 import { useTheme } from '../context/ThemeContext';
@@ -16,9 +16,10 @@ interface HeaderProps {
   currentPlaylistName: string;
   isSplitView: boolean;
   onToggleSplitView: () => void;
+  onOpenStats?: () => void;
 }
 
-export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName, isSplitView, onToggleSplitView }: HeaderProps) {
+export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName, isSplitView, onToggleSplitView, onOpenStats }: HeaderProps) {
   const africaUrl = 'https://tvradiozap.eu/live/d/tvzaf.m3u';
   const europaUrl = 'https://tvradiozap.eu/live/d/tvzeu.m3u';
   const worldUrl = 'https://tvradiozap.eu/live/d/tvrztv.m3u';
@@ -357,6 +358,14 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
             >
               <Tv size={14} className="text-zinc-500" />
               CANAL+
+            </button>
+
+            <button
+              onClick={onOpenStats}
+              className="flex items-center gap-2 px-2.5 lg:px-4 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 border bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-white"
+            >
+              <BarChart2 size={14} /> 
+              <span className="hidden lg:inline">STATS</span>
             </button>
 
             <button

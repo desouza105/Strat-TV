@@ -5,13 +5,28 @@
 
 import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import Hls from 'hls.js';
-import { Play, Pause, Volume2, VolumeX, Maximize, Loader2, AlertCircle, PictureInPicture2, Settings } from 'lucide-react';
+import { Play, Pause, Volume2, VolumeX, Maximize, Loader2, AlertCircle, PictureInPicture2, Settings, Timer, Captions, CaptionsOff, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+
+interface AudioTrack {
+  id: number;
+  name: string;
+  lang: string;
+  default?: boolean;
+}
+interface SubtitleTrack {
+  id: number;
+  name: string;
+  lang: string;
+  default?: boolean;
+}
 
 interface VideoPlayerProps {
   url: string;
   name: string;
   onError?: (error: string) => void;
+  onStartSleepTimer?: (minutes: number) => void;
+  sleepTimerActive?: boolean;
 }
 
 export interface VideoPlayerRef {
@@ -21,7 +36,7 @@ export interface VideoPlayerRef {
   setVolume: (value: number) => void;
 }
 
-const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, onError }, ref) => {
+const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, onError, onStartSleepTimer, sleepTimerActive }, ref) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -33,6 +48,12 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
   const [levels, setLevels] = useState<{ index: number; height: number; bitrate: number }[]>([]);
   const [currentLevel, setCurrentLevel] = useState<number>(-1); // -1 for Auto
   const [isQualityOpen, setIsQualityOpen] = useState(false);
+  const [showSleepMenu, setShowSleepMenu] = useState(false);
+  const [audioTracks, setAudioTracks] = useState<AudioTrack[]>([]);
+  const [subtitleTracks, setSubtitleTracks] = useState<SubtitleTrack[]>([]);
+  const [activeAudio, setActiveAudio] = useState<number>(-1);
+  const [activeSubtitle, setActiveSubtitle] = useState<number>(-1);
+  const [showTracksMenu, setShowTracksMenu] = useState(false);
 
   useImperativeHandle(ref, () => ({
     togglePlay,
@@ -61,6 +82,11 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
 
     setIsLoading(true);
     setError(null);
+    setAudioTracks([]);
+    setSubtitleTracks([]);
+    setActiveAudio(-1);
+    setActiveSubtitle(-1);
+    setShowTracksMenu(false);
 
     // Clean up previous HLS instance
     if (hlsRef.current) {
@@ -77,7 +103,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
       hls.loadSource(url);
       hls.attachMedia(video);
 
-      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+      hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
         setIsLoading(false);
         const availableLevels = hls.levels.map((level, index) => ({
           index,
@@ -87,6 +113,34 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
         
         setLevels(availableLevels);
         setCurrentLevel(hls.currentLevel);
+
+        // Pistes audio
+        if (hls.audioTracks && hls.audioTracks.length > 1) {
+          const tracks: AudioTrack[] = hls.audioTracks.map((t, i) => ({
+            id: i,
+            name: t.name || `Audio ${i + 1}`,
+            lang: t.lang || '',
+            default: t.default,
+          }));
+          setAudioTracks(tracks);
+          setActiveAudio(hls.audioTrack);
+        } else {
+          setAudioTracks([]);
+        }
+        
+        // Sous-titres
+        if (hls.subtitleTracks && hls.subtitleTracks.length > 0) {
+          const subs: SubtitleTrack[] = hls.subtitleTracks.map((t, i) => ({
+            id: i,
+            name: t.name || `Subtitle ${i + 1}`,
+            lang: t.lang || '',
+            default: t.default,
+          }));
+          setSubtitleTracks(subs);
+          setActiveSubtitle(hls.subtitleTrack ?? -1);
+        } else {
+          setSubtitleTracks([]);
+        }
 
         video.play().catch(() => {
           setIsPlaying(false);
@@ -198,6 +252,18 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
       setCurrentLevel(index);
       setIsQualityOpen(false);
     }
+  };
+
+  const handleAudioChange = (id: number) => {
+    if (!hlsRef.current) return;
+    hlsRef.current.audioTrack = id;
+    setActiveAudio(id);
+  };
+
+  const handleSubtitleChange = (id: number) => {
+    if (!hlsRef.current) return;
+    hlsRef.current.subtitleTrack = id;
+    setActiveSubtitle(id);
   };
 
   return (
@@ -316,6 +382,155 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                   <PictureInPicture2 className="w-5 h-5" />
                 </button>
               )}
+
+              {(audioTracks.length > 1 || subtitleTracks.length > 0) && (
+                <div className="relative">
+                  <button
+                    onClick={() => setShowTracksMenu(!showTracksMenu)}
+                    className={`p-2 min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 flex items-center justify-center rounded-lg transition-all hover:bg-white/10 ${showTracksMenu ? 'text-white bg-white/10' : 'text-zinc-400'}`}
+                    title="Pistes audio / Sous-titres"
+                  >
+                    <Captions size={18} />
+                  </button>
+                  
+                  <AnimatePresence>
+                    {showTracksMenu && (
+                      <>
+                        <div className="fixed inset-0 z-10" onClick={() => setShowTracksMenu(false)} />
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.9, y: 5 }}
+                          animate={{ opacity: 1, scale: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.9, y: 5 }}
+                          className="absolute bottom-full right-0 mb-2 bg-zinc-900 border border-zinc-700 rounded-2xl p-3 z-20 min-w-[200px] shadow-2xl"
+                        >
+                          {/* Pistes audio */}
+                          {audioTracks.length > 1 && (
+                            <div className="mb-3">
+                              <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-2 px-1">
+                                Piste audio
+                              </p>
+                              {audioTracks.map(track => (
+                                <button
+                                  key={track.id}
+                                  onClick={() => handleAudioChange(track.id)}
+                                  className={`flex items-center justify-between w-full px-3 py-2.5 rounded-xl text-sm font-bold transition-colors ${activeAudio === track.id ? 'bg-white/10 text-white' : 'text-zinc-400 hover:bg-white/5 hover:text-white'}`}
+                                >
+                                  <span className="flex items-center gap-2">
+                                    <Volume2 size={14} />
+                                    {track.name}
+                                  </span>
+                                  {track.lang && (
+                                    <span className="text-[10px] text-zinc-600 uppercase">
+                                      {track.lang}
+                                    </span>
+                                  )}
+                                  {activeAudio === track.id && (
+                                    <Check size={14} className="text-white ml-1" />
+                                  )}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                          
+                          {/* Séparateur */}
+                          {audioTracks.length > 1 && subtitleTracks.length > 0 && (
+                            <div className="h-[0.5px] bg-zinc-700 my-2 mx-1" />
+                          )}
+                          
+                          {/* Sous-titres */}
+                          {subtitleTracks.length > 0 && (
+                            <div>
+                              <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-2 px-1">
+                                Sous-titres
+                              </p>
+                              
+                              <button
+                                onClick={() => handleSubtitleChange(-1)}
+                                className={`flex items-center justify-between w-full px-3 py-2.5 rounded-xl text-sm font-bold transition-colors ${activeSubtitle === -1 ? 'bg-white/10 text-white' : 'text-zinc-400 hover:bg-white/5 hover:text-white'}`}
+                              >
+                                <span className="flex items-center gap-2">
+                                  <CaptionsOff size={14} />
+                                  Désactivé
+                                </span>
+                                {activeSubtitle === -1 && (
+                                  <Check size={14} className="text-white" />
+                                )}
+                              </button>
+                              
+                              {subtitleTracks.map(track => (
+                                <button
+                                  key={track.id}
+                                  onClick={() => handleSubtitleChange(track.id)}
+                                  className={`flex items-center justify-between w-full px-3 py-2.5 rounded-xl text-sm font-bold transition-colors ${activeSubtitle === track.id ? 'bg-white/10 text-white' : 'text-zinc-400 hover:bg-white/5 hover:text-white'}`}
+                                >
+                                  <span className="flex items-center gap-2">
+                                    <Captions size={14} />
+                                    {track.name}
+                                  </span>
+                                  <span className="flex items-center gap-2">
+                                    {track.lang && (
+                                      <span className="text-[10px] text-zinc-600 uppercase">
+                                        {track.lang}
+                                      </span>
+                                    )}
+                                    {activeSubtitle === track.id && (
+                                      <Check size={14} className="text-white" />
+                                    )}
+                                  </span>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </motion.div>
+                      </>
+                    )}
+                  </AnimatePresence>
+                </div>
+              )}
+
+              <div className="relative">
+                <button
+                  onClick={() => setShowSleepMenu(!showSleepMenu)}
+                  className={`p-2 min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 flex items-center justify-center rounded-lg transition-all hover:bg-white/10 ${sleepTimerActive ? 'text-white' : 'text-zinc-400'}`}
+                  title="Sleep Timer"
+                >
+                  <Timer size={18} />
+                </button>
+                
+                <AnimatePresence>
+                  {showSleepMenu && (
+                    <>
+                      <div className="fixed inset-0 z-10" onClick={() => setShowSleepMenu(false)} />
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.9, y: 5 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.9, y: 5 }}
+                        className="absolute bottom-full right-0 mb-2 bg-zinc-900 border border-zinc-700 rounded-2xl p-3 z-20 min-w-[160px] shadow-2xl"
+                      >
+                        <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-2 px-1">
+                          Arrêter dans
+                        </p>
+                        {[15, 30, 60, 90].map(min => (
+                          <button
+                            key={min}
+                            onClick={() => {
+                              onStartSleepTimer?.(min);
+                              setShowSleepMenu(false);
+                            }}
+                            className="flex items-center justify-between w-full px-3 py-2.5 rounded-xl text-sm font-bold text-zinc-300 hover:bg-white/10 hover:text-white transition-colors"
+                          >
+                            <span>{min} min</span>
+                            <span className="text-[10px] text-zinc-600">
+                              {min >= 60 ? `${min/60}h` : ''}
+                            </span>
+                          </button>
+                        ))}
+                      </motion.div>
+                    </>
+                  )}
+                </AnimatePresence>
+              </div>
+
               <button 
                 onClick={toggleFullscreen}
                 className="p-2 hover:bg-white/20 rounded-full transition-colors text-white"

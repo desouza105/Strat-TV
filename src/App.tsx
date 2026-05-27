@@ -11,8 +11,10 @@ import SplashScreen from './components/SplashScreen';
 import { IPTVChannel } from './types/iptv';
 import { parseM3U } from './utils/m3uParser';
 import { PORTAL_SOURCES } from './constants/portal_data';
-import { Tv, WifiOff, Globe, Sparkles, MapPin, Grid2x2, X, Maximize2 } from 'lucide-react';
+import { Tv, WifiOff, Globe, Sparkles, MapPin, Grid2x2, X, Maximize2, Timer, X as XIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { addSession, WatchSession } from './utils/watchStats';
+import StatsModal from './components/StatsModal';
 
 export default function App() {
   const [channels, setChannels] = useState<IPTVChannel[]>([]);
@@ -24,10 +26,79 @@ export default function App() {
   const [isAppLoading, setIsAppLoading] = useState(true);
   const playerRef = useRef<VideoPlayerRef>(null);
 
+  // Watch Stats States
+  const watchStartRef = useRef<number | null>(null);
+  const watchChannelRef = useRef<IPTVChannel | null>(null);
+  const [isStatsOpen, setIsStatsOpen] = useState(false);
+
   // Split View States
   const [isSplitView, setIsSplitView] = useState(false);
   const [splitChannels, setSplitChannels] = useState<IPTVChannel[]>([]);
   const [activeSplitIndex, setActiveSplitIndex] = useState(0);
+
+  // Sleep Timer States
+  const [sleepTimerActive, setSleepTimerActive] = useState(false);
+  const [sleepTimerEnd, setSleepTimerEnd] = useState<number | null>(null);
+  const [sleepTimerRemaining, setSleepTimerRemaining] = useState<number>(0);
+  const sleepTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const startSleepTimer = useCallback((minutes: number) => {
+    if (sleepTimerRef.current) clearInterval(sleepTimerRef.current);
+    const end = Date.now() + minutes * 60 * 1000;
+    setSleepTimerEnd(end);
+    setSleepTimerActive(true);
+    setSleepTimerRemaining(minutes * 60);
+    
+    sleepTimerRef.current = setInterval(() => {
+      const remaining = Math.ceil((end - Date.now()) / 1000);
+      if (remaining <= 0) {
+        clearInterval(sleepTimerRef.current!);
+        setSleepTimerActive(false);
+        setSleepTimerEnd(null);
+        setSleepTimerRemaining(0);
+        setSelectedChannel(null);  // coupe la lecture
+      } else {
+        setSleepTimerRemaining(remaining);
+      }
+    }, 1000);
+  }, []);
+
+  const cancelSleepTimer = useCallback(() => {
+    if (sleepTimerRef.current) clearInterval(sleepTimerRef.current);
+    setSleepTimerActive(false);
+    setSleepTimerEnd(null);
+    setSleepTimerRemaining(0);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (sleepTimerRef.current) clearInterval(sleepTimerRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (watchStartRef.current && watchChannelRef.current) {
+        const duration = Math.round(
+          (Date.now() - watchStartRef.current) / 1000
+        );
+        addSession({
+          channelName: watchChannelRef.current.name,
+          channelGroup: watchChannelRef.current.group || 'Autre',
+          startTime: watchStartRef.current,
+          duration,
+        });
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, []);
+
+  const formatRemaining = (secs: number): string => {
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  };
 
   const toggleSplitView = useCallback(() => {
     setIsSplitView(prev => {
@@ -59,6 +130,21 @@ export default function App() {
         }
       });
     } else {
+      // Enregistre la session précédente
+      if (watchStartRef.current && watchChannelRef.current) {
+        const duration = Math.round(
+          (Date.now() - watchStartRef.current) / 1000
+        );
+        addSession({
+          channelName: watchChannelRef.current.name,
+          channelGroup: watchChannelRef.current.group || 'Autre',
+          startTime: watchStartRef.current,
+          duration,
+        });
+      }
+      // Démarre la nouvelle session
+      watchStartRef.current = Date.now();
+      watchChannelRef.current = channel;
       setSelectedChannel(channel);
     }
   }, [isSplitView, activeSplitIndex]);
@@ -270,6 +356,7 @@ export default function App() {
         currentPlaylistName={playlistName}
         isSplitView={isSplitView}
         onToggleSplitView={toggleSplitView}
+        onOpenStats={() => setIsStatsOpen(true)}
       />
       
       <main className="flex flex-col md:flex-row flex-1 overflow-hidden relative">
@@ -359,11 +446,41 @@ export default function App() {
                 transition={{ type: "spring", bounce: 0, duration: 0.5 }}
                 className="w-full max-w-6xl z-10"
               >
+                {/* Sleep Timer UI */}
+                <AnimatePresence>
+                  {sleepTimerActive ? (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="w-full max-w-6xl z-20 mb-3 flex items-center justify-between bg-zinc-900/80 backdrop-blur-sm border border-zinc-800 rounded-2xl px-4 py-3"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Timer size={16} className="text-white" />
+                        <span className="text-sm font-bold text-white uppercase tracking-wider">
+                          Arrêt dans
+                        </span>
+                        <span className="text-lg font-black text-white tabular-nums">
+                          {formatRemaining(sleepTimerRemaining)}
+                        </span>
+                      </div>
+                      <button
+                        onClick={cancelSleepTimer}
+                        className="flex items-center gap-2 text-xs font-bold text-zinc-400 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-white/5"
+                      >
+                        <XIcon size={14} /> Annuler
+                      </button>
+                    </motion.div>
+                  ) : null}
+                </AnimatePresence>
+
                 <VideoPlayer 
                   ref={playerRef}
                   url={selectedChannel.url} 
                   name={selectedChannel.name}
                   onError={handlePlayerError}
+                  onStartSleepTimer={startSleepTimer}
+                  sleepTimerActive={sleepTimerActive}
                 />
                 
                 <div className="mt-8 flex flex-col md:flex-row md:items-end justify-between gap-6">
@@ -448,6 +565,10 @@ export default function App() {
           scrollbar-width: none;
         }
       `}</style>
+      <StatsModal 
+        isOpen={isStatsOpen} 
+        onClose={() => setIsStatsOpen(false)} 
+      />
     </div>
   );
 }
