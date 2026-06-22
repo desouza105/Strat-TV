@@ -165,7 +165,7 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
             </div>
           </div>
 
-          <div className="hidden md:flex items-center gap-2">
+          <div className="hidden xl:flex items-center gap-2">
             {/* Country Selector Button */}
             <div className="relative">
               <Button
@@ -343,10 +343,10 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
 
         <div className="flex items-center gap-2 md:gap-4">
           {/* Mobile Quick Access buttons */}
-          <div className="flex md:hidden items-center gap-1.5">
+          <div className="flex xl:hidden items-center gap-1.5 overflow-x-auto scrollbar-none pr-2">
             <button
               onClick={onToggleSplitView}
-              className={`p-2 rounded-lg transition-all active:scale-95 ${
+              className={`flex-shrink-0 p-2 rounded-lg transition-all active:scale-95 ${
                 isSplitView ? 'bg-card text-white' : 'bg-card text-muted-foreground'
               }`}
               title="Mode Multi-écran"
@@ -355,7 +355,7 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
             </button>
             <button
               onClick={() => setIsPortalOpen(!isPortalOpen)}
-              className={`p-2 rounded-lg transition-all active:scale-95 ${
+              className={`flex-shrink-0 p-2 rounded-lg transition-all active:scale-95 ${
                 isPortalOpen ? 'bg-card text-white' : 'bg-card text-muted-foreground'
               }`}
             >
@@ -364,7 +364,7 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
             <button
               onClick={() => onLoadPlaylist(africaUrl)}
               disabled={isLoading}
-              className={`p-2 rounded-lg transition-all active:scale-95 ${
+              className={`flex-shrink-0 p-2 rounded-lg transition-all active:scale-95 ${
                 isAfricaActive 
                   ? 'bg-white/10 text-white' 
                   : 'bg-zinc-900 text-zinc-500'
@@ -375,7 +375,7 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
             <button
               onClick={() => onLoadPlaylist(europaUrl)}
               disabled={isLoading}
-              className={`p-2 rounded-lg transition-all active:scale-95 ${
+              className={`flex-shrink-0 p-2 rounded-lg transition-all active:scale-95 ${
                 isEuropaActive 
                   ? 'bg-white/10 text-white' 
                   : 'bg-zinc-900 text-zinc-500'
@@ -386,7 +386,7 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
             <button
               onClick={() => onLoadPlaylist(worldUrl)}
               disabled={isLoading}
-              className={`p-2 rounded-lg transition-all active:scale-95 ${
+              className={`flex-shrink-0 p-2 rounded-lg transition-all active:scale-95 ${
                 isWorldActive 
                   ? 'bg-white/10 text-white' 
                   : 'bg-zinc-900 text-zinc-500'
@@ -397,7 +397,7 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
             <button
               onClick={() => onLoadPlaylist(regionalUrl)}
               disabled={isLoading}
-              className={`p-2 rounded-lg transition-all active:scale-95 ${
+              className={`flex-shrink-0 p-2 rounded-lg transition-all active:scale-95 ${
                 isRegionalActive 
                   ? 'bg-white/10 text-white' 
                   : 'bg-zinc-900 text-zinc-500'
@@ -408,7 +408,7 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
             <button
               onClick={handleAdultClick}
               disabled={isLoading}
-              className={`p-2 rounded-lg transition-all active:scale-95 ${
+              className={`flex-shrink-0 p-2 rounded-lg transition-all active:scale-95 ${
                 isAdultActive 
                   ? 'bg-white/10 text-white' 
                   : 'bg-zinc-900 text-zinc-500'
@@ -419,13 +419,13 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
             <button
               onClick={() => setIsCanalOpen(true)}
               disabled={isLoading}
-              className="p-2 rounded-lg transition-all active:scale-95 bg-zinc-900 text-zinc-500"
+              className="flex-shrink-0 p-2 rounded-lg transition-all active:scale-95 bg-zinc-900 text-zinc-500"
             >
               <Tv size={18} />
             </button>
             <button
               onClick={() => setIsImportOpen(true)}
-              className="p-2 rounded-lg transition-all active:scale-95 bg-zinc-900 border-zinc-800 text-zinc-500 border"
+              className="flex-shrink-0 p-2 rounded-lg transition-all active:scale-95 bg-zinc-900 border-zinc-800 text-zinc-500 border"
             >
               <Plus size={18} />
             </button>

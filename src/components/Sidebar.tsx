@@ -53,7 +53,7 @@ export default function Sidebar({
   }, [channels, filter, channelStatus, showOnlyWorking, searchQuery]);
 
   return (
-    <aside className="w-full md:w-80 h-[40vh] md:h-full bg-card border-b md:border-b-0 md:border-r border-border flex flex-col overflow-hidden transition-colors duration-300">
+    <aside className="w-full md:w-80 h-[45vh] md:h-full bg-card border-t md:border-t-0 md:border-r border-border flex flex-col overflow-hidden transition-colors duration-300 order-2 md:order-1">
       <div className="p-4 border-b border-border space-y-4">
         {/* Search Bar */}
         <div className="relative">
