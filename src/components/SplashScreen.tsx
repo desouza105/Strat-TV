@@ -33,7 +33,7 @@ export default function SplashScreen({ onComplete }: { onComplete: () => void })
       initial={{ opacity: 1 }}
       exit={{ opacity: 0, scale: 1.05 }}
       transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-      className="fixed inset-0 z-[100] bg-app-bg flex flex-col items-center justify-center overflow-hidden"
+      className="fixed inset-0 z-[100] bg-background flex flex-col items-center justify-center overflow-hidden"
     >
       {/* Grid Pattern */}
       <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:40px_40px] opacity-20 pointer-events-none" />

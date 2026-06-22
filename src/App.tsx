@@ -343,7 +343,7 @@ export default function App() {
   }, []);
 
   return (
-    <div className="flex flex-col h-screen bg-app-bg text-app-text transition-colors duration-300 selection:bg-white/20">
+    <div className="flex flex-col h-screen bg-background text-foreground transition-colors duration-300 selection:bg-primary/20">
       <AnimatePresence>
         {isAppLoading && (
           <SplashScreen onComplete={() => setIsAppLoading(false)} />
@@ -369,8 +369,8 @@ export default function App() {
           onLoadPlaylist={loadPlaylist}
         />
 
-        <section className="flex-1 flex flex-col items-center justify-center p-4 md:p-8 bg-app-bg relative overflow-y-auto custom-scrollbar transition-colors duration-300">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-white/3 blur-[120px] rounded-full pointer-events-none" />
+        <section className="flex-1 flex flex-col items-center justify-center p-4 md:p-8 bg-background relative overflow-y-auto custom-scrollbar transition-colors duration-300">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/5 blur-[120px] rounded-full pointer-events-none" />
 
           <AnimatePresence mode="wait">
             {isSplitView ? (
@@ -391,12 +391,12 @@ export default function App() {
                       key={idx}
                       onClick={() => setActiveSplitIndex(idx)}
                       className={`relative flex flex-col rounded-2xl overflow-hidden border-2 transition-all group ${
-                        activeSplitIndex === idx ? 'border-white ring-4 ring-white/10 shadow-2xl' : 'border-app-border'
-                      } ${!channel ? 'bg-app-card/50 border-dashed justify-center items-center cursor-pointer hover:bg-app-card' : 'bg-app-card'}`}
+                        activeSplitIndex === idx ? 'border-primary ring-4 ring-primary/10 shadow-2xl' : 'border-border'
+                      } ${!channel ? 'bg-card/50 border-dashed justify-center items-center cursor-pointer hover:bg-card' : 'bg-card'}`}
                     >
                       {channel ? (
                         <>
-                          <div className="flex items-center justify-between p-3 bg-app-bg/50 border-b border-app-border">
+                          <div className="flex items-center justify-between p-3 bg-background/50 border-b border-border">
                             <div className="flex items-center gap-2 max-w-[60%]">
                               {channel.logo && (
                                 <img src={channel.logo} className="w-5 h-5 object-contain" referrerPolicy="no-referrer" />
@@ -406,14 +406,14 @@ export default function App() {
                             <div className="flex items-center gap-1">
                               <button 
                                 onClick={(e) => { e.stopPropagation(); expandSplitChannel(channel); }}
-                                className="p-1.5 hover:bg-white/10 rounded-lg transition-colors text-app-text-muted hover:text-app-text"
+                                className="p-1.5 hover:bg-muted-foreground/10 rounded-lg transition-colors text-muted-foreground hover:text-foreground"
                                 title="Agrandir"
                               >
                                 <Maximize2 size={14} />
                               </button>
                               <button 
                                 onClick={(e) => { e.stopPropagation(); removeSplitChannel(idx); }}
-                                className="p-1.5 hover:bg-red-500/10 rounded-lg transition-colors text-red-500"
+                                className="p-1.5 hover:bg-destructive/10 rounded-lg transition-colors text-destructive"
                               >
                                 <X size={14} />
                               </button>
@@ -429,8 +429,8 @@ export default function App() {
                         </>
                       ) : (
                         <div className="text-center p-6 space-y-3 opacity-40 group-hover:opacity-100 transition-opacity">
-                          <Grid2x2 className="w-10 h-10 mx-auto text-app-text-muted" />
-                          <p className="text-[10px] font-black uppercase tracking-widest">Zone Libre</p>
+                          <Grid2x2 className="w-10 h-10 mx-auto text-muted-foreground" />
+                          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Zone Libre</p>
                         </div>
                       )}
                     </div>
@@ -485,23 +485,23 @@ export default function App() {
                 
                 <div className="mt-8 flex flex-col md:flex-row md:items-end justify-between gap-6">
                   <div>
-                    <h2 className="text-3xl md:text-5xl font-bold mb-2 tracking-tighter uppercase text-app-text">
+                    <h2 className="text-3xl md:text-5xl font-bold mb-2 tracking-tighter uppercase text-foreground">
                       {selectedChannel.name}
                     </h2>
-                    <div className="flex items-center gap-4 text-sm font-bold text-app-text-muted uppercase tracking-widest">
-                       <span className="flex items-center gap-2 text-white"><Globe size={14} /> DIRECT</span>
-                       <span className="w-1.5 h-1.5 rounded-full bg-app-border" />
-                       <span className="flex items-center gap-2"><MapPin size={14} className="text-app-text-muted" /> {playlistName || 'INTERNATIONAL'}</span>
-                       <span className="w-1.5 h-1.5 rounded-full bg-app-border" />
-                       <span className="text-app-text-muted">{selectedChannel.group || 'GÉNERAL'}</span>
+                    <div className="flex items-center gap-4 text-sm font-bold text-muted-foreground uppercase tracking-widest">
+                       <span className="flex items-center gap-2 text-primary"><Globe size={14} /> DIRECT</span>
+                       <span className="w-1.5 h-1.5 rounded-full bg-border" />
+                       <span className="flex items-center gap-2"><MapPin size={14} className="text-muted-foreground" /> {playlistName || 'INTERNATIONAL'}</span>
+                       <span className="w-1.5 h-1.5 rounded-full bg-border" />
+                       <span className="text-muted-foreground">{selectedChannel.group || 'GÉNERAL'}</span>
                     </div>
                   </div>
                   
                   <div className="flex gap-2">
-                    <button className="bg-app-card hover:bg-zinc-800 px-6 py-2 rounded-xl text-sm font-bold text-app-text transition-all active:scale-95">
+                    <button className="bg-card hover:bg-muted px-6 py-2 rounded-xl text-sm font-bold text-foreground transition-all active:scale-95">
                       REPORT
                     </button>
-                    <button className="bg-white hover:bg-zinc-200 text-black px-8 py-2 rounded-xl text-sm font-bold transition-all active:scale-95 shadow-lg shadow-white/10">
+                    <button className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-2 rounded-xl text-sm font-bold transition-all active:scale-95 shadow-lg">
                       LIVE
                     </button>
                   </div>
@@ -527,12 +527,12 @@ export default function App() {
                 ) : (
                   <div className="space-y-8">
                     <div className="space-y-4">
-                      <h3 className="text-3xl md:text-5xl font-normal tracking-tighter text-app-text">
-                        Moody<span className="font-serif italic text-app-text-muted/50">.</span>
+                      <h3 className="text-3xl md:text-5xl font-normal tracking-tighter text-foreground">
+                        Moody<span className="font-serif italic text-muted-foreground/50">.</span>
                       </h3>
-                      <p className="text-app-text-muted text-base md:text-lg leading-relaxed max-w-sm mx-auto font-light">
+                      <p className="text-muted-foreground text-base md:text-lg leading-relaxed max-w-sm mx-auto font-light">
                         Choisissez un pays ou une catégorie dans le menu supérieur pour{' '}
-                        <span className="font-serif italic text-white/80 tracking-wide font-normal">accéder à vos chaînes préférées</span>.
+                        <span className="font-serif italic text-foreground tracking-wide font-normal">accéder à vos chaînes préférées</span>.
                       </p>
                     </div>
                   </div>
@@ -551,7 +551,7 @@ export default function App() {
           background: transparent;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: var(--color-app-border);
+          background: hsl(var(--border));
           border-radius: 10px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {

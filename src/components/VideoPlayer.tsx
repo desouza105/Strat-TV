@@ -284,10 +284,10 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
 
       {/* Error Overlay */}
       {error && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-app-card z-20 p-6 text-center">
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-card z-20 p-6 text-center">
           <AlertCircle className="w-16 h-16 text-brand-secondary mb-4" />
-          <h3 className="text-xl font-bold text-app-text mb-2">Flux indisponible</h3>
-          <p className="text-app-text-muted max-w-md">{error}</p>
+          <h3 className="text-xl font-bold text-foreground mb-2">Flux indisponible</h3>
+          <p className="text-muted-foreground max-w-md">{error}</p>
         </div>
       )}
 
@@ -345,15 +345,15 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
                         transition={{ type: "spring", bounce: 0, duration: 0.4 }}
-                        className="absolute bottom-full right-0 mb-2 w-32 bg-app-card border border-app-border rounded-xl shadow-2xl overflow-hidden z-50"
+                        className="absolute bottom-full right-0 mb-2 w-32 bg-card border border-border rounded-xl shadow-2xl overflow-hidden z-50"
                       >
-                        <div className="p-1 uppercase text-[10px] font-black text-app-text-muted border-b border-app-border text-center bg-app-bg/50">
+                        <div className="p-1 uppercase text-[10px] font-black text-muted-foreground border-b border-border text-center bg-background/50">
                           Qualité
                         </div>
                         <div className="max-h-48 overflow-y-auto custom-scrollbar">
                           <button
                             onClick={() => changeQuality(-1)}
-                            className={`w-full px-4 py-2 text-left text-[11px] font-bold transition-colors ${currentLevel === -1 ? 'bg-brand-primary text-white' : 'text-app-text hover:bg-zinc-800'}`}
+                            className={`w-full px-4 py-2 text-left text-[11px] font-bold transition-colors ${currentLevel === -1 ? 'bg-brand-primary text-white' : 'text-foreground hover:bg-zinc-800'}`}
                           >
                             AUTO
                           </button>
@@ -361,7 +361,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                             <button
                               key={level.index}
                               onClick={() => changeQuality(level.index)}
-                              className={`w-full px-4 py-2 text-left text-[11px] font-bold transition-colors ${currentLevel === level.index ? 'bg-brand-primary text-white' : 'text-app-text hover:bg-zinc-800'}`}
+                              className={`w-full px-4 py-2 text-left text-[11px] font-bold transition-colors ${currentLevel === level.index ? 'bg-brand-primary text-white' : 'text-foreground hover:bg-zinc-800'}`}
                             >
                               {level.height}P
                             </button>
