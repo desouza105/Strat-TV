@@ -1,13 +1,12 @@
 import React, {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
-import { ThemeProvider } from './context/ThemeContext';
 import './index.css';
+
+document.documentElement.classList.add('dark');
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <ThemeProvider>
-      <App />
-    </ThemeProvider>
+    <App />
   </StrictMode>,
 );

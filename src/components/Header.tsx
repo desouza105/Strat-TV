@@ -5,12 +5,11 @@
 
 import React, { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { Download, ChevronDown, Globe, Film, MapPin, Search, LayoutGrid, Radio, Grid2x2, Flame, Lock, ShieldCheck, Tv, AlertCircle, Plus, Trash2, Link, FileUp, X as XIcon, BarChart2, Sun, Moon } from 'lucide-react';
+import { Download, ChevronDown, Globe, Film, MapPin, Search, LayoutGrid, Radio, Grid2x2, Flame, Lock, ShieldCheck, Tv, AlertCircle, Plus, Trash2, Link, FileUp, X as XIcon, BarChart2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { PORTAL_SOURCES, PlaylistSource, getCustomPlaylists, saveCustomPlaylist, deleteCustomPlaylist } from '../constants/portal_data';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useMediaQuery } from '../hooks/useMediaQuery';
-import { useTheme } from '../context/ThemeContext';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -26,7 +25,6 @@ interface HeaderProps {
 
 export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName, isSplitView, onToggleSplitView, onOpenStats }: HeaderProps) {
   const isMobileLandscape = useMediaQuery('(orientation: landscape) and (max-height: 500px)');
-  const { theme, toggleTheme } = useTheme();
   
   const africaUrl = 'https://tvradiozap.eu/live/d/tvzaf.m3u';
   const europaUrl = 'https://tvradiozap.eu/live/d/tvzeu.m3u';
@@ -255,31 +253,12 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
             >
               <Plus size={14} className="text-muted-foreground" /> IMPORT
             </Button>
-            
-            <div className="w-px h-6 bg-border mx-1" />
-            
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={toggleTheme}
-              className="rounded-xl h-8 w-8 xl:h-10 xl:w-10"
-              title="Changer le thème"
-            >
-              {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-            </Button>
           </div>
         </div>
 
         <div className="flex items-center gap-2 md:gap-4">
           {/* Mobile Quick Access buttons */}
           <div className="flex lg:hidden items-center gap-1.5 overflow-x-auto scrollbar-none pr-2">
-            <button
-              onClick={toggleTheme}
-              className="flex-shrink-0 p-2 rounded-lg transition-all active:scale-95 bg-card text-muted-foreground hover:text-foreground"
-              title="Changer le thème"
-            >
-              {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-            </button>
             <button
               onClick={onToggleSplitView}
               className={`flex-shrink-0 p-2 rounded-lg transition-all active:scale-95 ${
