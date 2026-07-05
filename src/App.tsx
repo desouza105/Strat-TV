@@ -11,12 +11,15 @@ import SplashScreen from './components/SplashScreen';
 import { IPTVChannel } from './types/iptv';
 import { parseM3U } from './utils/m3uParser';
 import { PORTAL_SOURCES } from './constants/portal_data';
-import { Tv, WifiOff, Globe, Sparkles, MapPin, Grid2x2, X, Maximize2, Timer, X as XIcon } from 'lucide-react';
+import { Tv, WifiOff, Globe, Sparkles, MapPin, Grid2x2, X, Maximize2, Timer, X as XIcon, Menu } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { addSession, WatchSession } from './utils/watchStats';
 import StatsModal from './components/StatsModal';
+import { useMediaQuery } from './hooks/useMediaQuery';
 
 export default function App() {
+  const isMobileLandscape = useMediaQuery('(orientation: landscape) and (max-height: 500px)');
+  const [isLandscapeSidebarOpen, setIsLandscapeSidebarOpen] = useState(false);
   const [channels, setChannels] = useState<IPTVChannel[]>([]);
   const [selectedChannel, setSelectedChannel] = useState<IPTVChannel | null>(null);
   const [currentPlaylistUrl, setCurrentPlaylistUrl] = useState<string>('');
@@ -114,17 +117,13 @@ export default function App() {
     if (isSplitView) {
       setSplitChannels(prev => {
         const next = [...prev];
-        if (next.length < 4 && !next.some(c => c.url === channel.url)) {
-          // If less than 4, add new one if not empty slots
-          if (next.length === 0) {
-            return [channel];
-          } else {
-            // Replace active if set, otherwise add
-            next[activeSplitIndex] = channel;
-            return next;
-          }
+        if (next.some(c => c.url === channel.url)) return next;
+
+        if (next.length < 4) {
+          next.push(channel);
+          setActiveSplitIndex(next.length - 1);
+          return next;
         } else {
-          // Replaces active index
           next[activeSplitIndex] = channel;
           return next;
         }
@@ -366,10 +365,21 @@ export default function App() {
           onChannelSelect={handleChannelSelect} 
           isLoading={isLoading}
           channelStatus={channelStatus}
-          onLoadPlaylist={loadPlaylist}
+          isMobileLandscape={isMobileLandscape}
+          isOpen={isLandscapeSidebarOpen}
+          onClose={() => setIsLandscapeSidebarOpen(false)}
         />
 
-        <section className="flex-1 flex flex-col items-center justify-center p-4 md:p-8 bg-background relative overflow-y-auto custom-scrollbar transition-colors duration-300 order-1 md:order-2 min-h-[50vh]">
+        <section className={`flex-1 flex flex-col items-center justify-center p-4 md:p-8 bg-background relative overflow-y-auto custom-scrollbar transition-colors duration-300 order-1 md:order-2 ${isMobileLandscape ? 'min-h-0' : 'min-h-[50vh]'}`}>
+          {isMobileLandscape && (
+             <button 
+               onClick={() => setIsLandscapeSidebarOpen(true)}
+               className="absolute top-4 left-4 z-40 p-2 bg-card/80 backdrop-blur-md rounded-xl border border-border shadow-lg md:hidden"
+               aria-label="Ouvrir la liste des chaînes"
+             >
+               <Menu size={20} className="text-foreground" />
+             </button>
+          )}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/5 blur-[120px] rounded-full pointer-events-none" />
 
           <AnimatePresence mode="wait">
@@ -381,10 +391,10 @@ export default function App() {
                 exit={{ opacity: 0, scale: 0.98 }}
                 transition={{ type: "spring", bounce: 0, duration: 0.5 }}
                 className={`grid gap-6 w-full max-w-7xl z-10 ${
-                  splitChannels.length <= 2 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 md:grid-cols-2'
+                  splitChannels.length <= 1 ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2'
                 }`}
               >
-                {[0, 1, 2, 3].map((idx) => {
+                {(splitChannels.length <= 2 ? Array.from({ length: Math.max(1, splitChannels.length) }, (_, i) => i) : [0, 1, 2, 3]).map((idx) => {
                   const channel = splitChannels[idx];
                   return (
                     <div 

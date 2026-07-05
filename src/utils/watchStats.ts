@@ -20,7 +20,11 @@ export const addSession = (session: WatchSession) => {
   sessions.push(session);
   // Garde max 500 sessions (environ 3 mois)
   if (sessions.length > 500) sessions.splice(0, sessions.length - 500);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
+  } catch (err) {
+    console.warn('Failed to save watch stats to localStorage:', err);
+  }
 };
 
 export const clearSessions = () => {

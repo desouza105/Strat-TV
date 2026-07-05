@@ -21,13 +21,21 @@ export const saveCustomPlaylist = (playlist: PlaylistSource) => {
   const current = getCustomPlaylists();
   const filtered = current.filter(p => p.url !== playlist.url);
   const next = [playlist, ...filtered].slice(0, 10);
-  localStorage.setItem('moody-custom-playlists', JSON.stringify(next));
+  try {
+    localStorage.setItem('moody-custom-playlists', JSON.stringify(next));
+  } catch (err) {
+    console.warn('Failed to save custom playlist to localStorage:', err);
+  }
 };
 
 export const deleteCustomPlaylist = (url: string) => {
   const current = getCustomPlaylists();
-  localStorage.setItem('moody-custom-playlists', 
-    JSON.stringify(current.filter(p => p.url !== url)));
+  try {
+    localStorage.setItem('moody-custom-playlists', 
+      JSON.stringify(current.filter(p => p.url !== url)));
+  } catch (err) {
+    console.warn('Failed to delete custom playlist from localStorage:', err);
+  }
 };
 
 export const PORTAL_SOURCES: PlaylistSource[] = [

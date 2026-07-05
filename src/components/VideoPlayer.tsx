@@ -93,6 +93,16 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
       hlsRef.current.destroy();
     }
 
+    const handleLoadedMetadata = () => {
+      setIsLoading(false);
+      video.play().catch(() => setIsPlaying(false));
+    };
+
+    const handleVideoError = () => {
+      setError("Native video error.");
+      if (onError) onError("Native video error");
+    };
+
     if (Hls.isSupported()) {
       const hls = new Hls({
         enableWorker: true,
@@ -157,34 +167,32 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
 
       hls.on(Hls.Events.ERROR, (_event, data) => {
         if (data.fatal) {
+          let errorMessage = "Stream error";
           switch (data.type) {
             case Hls.ErrorTypes.NETWORK_ERROR:
-              setError("Network error encountered.");
+              errorMessage = "Network error encountered.";
+              setError(errorMessage);
               hls.startLoad();
               break;
             case Hls.ErrorTypes.MEDIA_ERROR:
-              setError("Media error encountered.");
+              errorMessage = "Media error encountered.";
+              setError(errorMessage);
               hls.recoverMediaError();
               break;
             default:
-              setError("Stream unavailable.");
+              errorMessage = "Stream unavailable.";
+              setError(errorMessage);
               hls.destroy();
               break;
           }
-          if (onError) onError(error || "Stream error");
+          if (onError) onError(errorMessage);
         }
       });
     } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
       // For Safari native HLS support
       video.src = url;
-      video.addEventListener('loadedmetadata', () => {
-        setIsLoading(false);
-        video.play().catch(() => setIsPlaying(false));
-      });
-      video.addEventListener('error', () => {
-        setError("Native video error.");
-        if (onError) onError("Native video error");
-      });
+      video.addEventListener('loadedmetadata', handleLoadedMetadata);
+      video.addEventListener('error', handleVideoError);
     } else {
       setError("HLS is not supported in this browser.");
       if (onError) onError("HLS not supported");
@@ -194,6 +202,8 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
       if (hlsRef.current) {
         hlsRef.current.destroy();
       }
+      video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      video.removeEventListener('error', handleVideoError);
     };
   }, [url, onError]);
 
@@ -226,7 +236,9 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
   };
 
   const toggleFullscreen = () => {
-    if (videoRef.current) {
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(err => console.error(err));
+    } else if (videoRef.current) {
       if (videoRef.current.requestFullscreen) {
         videoRef.current.requestFullscreen();
       }
@@ -273,6 +285,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
         className="w-full h-full object-contain"
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
+        playsInline
       />
 
       {/* Loading Overlay */}
@@ -298,7 +311,8 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
             <div className="flex items-center gap-4">
               <button 
                 onClick={togglePlay}
-                className="p-2 hover:bg-white/20 rounded-full transition-colors text-white"
+                className="p-2 flex items-center justify-center min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 hover:bg-white/20 rounded-full transition-colors text-white"
+                aria-label={isPlaying ? "Mettre en pause" : "Lire"}
               >
                 {isPlaying ? <Pause className="fill-current w-6 h-6" /> : <Play className="fill-current w-6 h-6" />}
               </button>
@@ -306,7 +320,8 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
               <div className="hidden sm:flex items-center gap-2">
                 <button 
                   onClick={toggleMute}
-                  className="p-2 hover:bg-white/20 rounded-full transition-colors text-white"
+                  className="p-2 flex items-center justify-center min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 hover:bg-white/20 rounded-full transition-colors text-white"
+                  aria-label={isMuted || volume === 0 ? "Activer le son" : "Couper le son"}
                 >
                   {isMuted || volume === 0 ? <VolumeX className="w-6 h-6" /> : <Volume2 className="w-6 h-6" />}
                 </button>
@@ -332,7 +347,8 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                 <div className="relative">
                   <button 
                     onClick={() => setIsQualityOpen(!isQualityOpen)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 hover:bg-white/20 rounded-lg transition-colors text-white text-[10px] font-black uppercase tracking-widest border border-white/20"
+                    className="flex items-center justify-center gap-1.5 px-3 py-1.5 min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 hover:bg-white/20 rounded-lg transition-colors text-white text-[10px] font-black uppercase tracking-widest border border-white/20"
+                    aria-label="Paramètres de qualité"
                   >
                     <Settings className={`w-3.5 h-3.5 ${isQualityOpen ? 'animate-spin-slow' : ''}`} />
                     {currentLevel === -1 ? 'AUTO' : `${levels.find(l => l.index === currentLevel)?.height || ''}P`}
@@ -376,8 +392,9 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
               {isPipAvailable && (
                 <button 
                   onClick={togglePip}
-                  className="p-2 hover:bg-white/20 rounded-full transition-colors text-white"
+                  className="p-2 flex items-center justify-center min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 hover:bg-white/20 rounded-full transition-colors text-white"
                   title="Miniature (PiP)"
+                  aria-label="Afficher en mode miniature (PiP)"
                 >
                   <PictureInPicture2 className="w-5 h-5" />
                 </button>
@@ -389,6 +406,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                     onClick={() => setShowTracksMenu(!showTracksMenu)}
                     className={`p-2 min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 flex items-center justify-center rounded-lg transition-all hover:bg-white/10 ${showTracksMenu ? 'text-white bg-white/10' : 'text-zinc-400'}`}
                     title="Pistes audio / Sous-titres"
+                    aria-label="Pistes audio et sous-titres"
                   >
                     <Captions size={18} />
                   </button>
@@ -493,6 +511,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                   onClick={() => setShowSleepMenu(!showSleepMenu)}
                   className={`p-2 min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 flex items-center justify-center rounded-lg transition-all hover:bg-white/10 ${sleepTimerActive ? 'text-white' : 'text-zinc-400'}`}
                   title="Sleep Timer"
+                  aria-label="Minuteur de mise en veille"
                 >
                   <Timer size={18} />
                 </button>
@@ -533,7 +552,8 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
 
               <button 
                 onClick={toggleFullscreen}
-                className="p-2 hover:bg-white/20 rounded-full transition-colors text-white"
+                className="p-2 flex items-center justify-center min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 hover:bg-white/20 rounded-full transition-colors text-white"
+                aria-label="Basculer le plein écran"
               >
                 <Maximize className="w-6 h-6" />
               </button>

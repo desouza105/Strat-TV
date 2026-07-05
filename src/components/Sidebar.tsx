@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import { Search, Tv, Filter, Grid as GridIcon, MapPin } from 'lucide-react';
+import { Search, Tv, Filter, Grid as GridIcon, MapPin, X } from 'lucide-react';
 import { IPTVChannel } from '../types/iptv';
 import { motion, AnimatePresence } from 'motion/react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -16,7 +16,9 @@ interface SidebarProps {
   onChannelSelect: (channel: IPTVChannel) => void;
   isLoading: boolean;
   channelStatus: Record<string, 'checking' | 'active' | 'dead'>;
-  onLoadPlaylist: (url: string) => void;
+  isMobileLandscape?: boolean;
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
 export default function Sidebar({ 
@@ -25,6 +27,9 @@ export default function Sidebar({
   onChannelSelect, 
   isLoading, 
   channelStatus,
+  isMobileLandscape = false,
+  isOpen = false,
+  onClose
 }: SidebarProps) {
   const [filter, setFilter] = useState<string>('all');
   const [showOnlyWorking, setShowOnlyWorking] = useState(true);
@@ -53,14 +58,37 @@ export default function Sidebar({
   }, [channels, filter, channelStatus, showOnlyWorking, searchQuery]);
 
   return (
-    <aside className="w-full md:w-80 h-[45vh] md:h-full bg-card border-t md:border-t-0 md:border-r border-border flex flex-col overflow-hidden transition-colors duration-300 order-2 md:order-1">
-      <div className="p-4 border-b border-border space-y-4">
+    <>
+      {isMobileLandscape && isOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 backdrop-blur-sm" 
+          onClick={onClose}
+        />
+      )}
+      <aside 
+        className={`bg-card flex flex-col overflow-hidden transition-all duration-300 ${
+          isMobileLandscape 
+            ? `fixed inset-y-0 left-0 z-50 w-80 h-full border-r border-border ${isOpen ? 'translate-x-0' : '-translate-x-full'}`
+            : 'w-full md:w-80 h-[45vh] md:h-full border-t md:border-t-0 md:border-r border-border order-2 md:order-1'
+        }`}
+      >
+        {isMobileLandscape && (
+          <button 
+            onClick={onClose}
+            className="absolute top-2 right-2 p-2 bg-background/80 rounded-full z-50 md:hidden"
+            aria-label="Fermer la barre latérale"
+          >
+            <X size={20} className="text-foreground" />
+          </button>
+        )}
+        <div className={`p-4 border-b border-border space-y-4 ${isMobileLandscape ? 'pt-10' : ''}`}>
         {/* Search Bar */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 w-4 h-4" />
           <input
             type="text"
             placeholder="Rechercher une chaîne..."
+            aria-label="Rechercher une chaîne"
             className="w-full bg-background border border-border rounded-xl py-2.5 pl-10 pr-4 text-sm text-foreground focus:ring-2 focus:ring-white/30 outline-none transition-all placeholder:text-zinc-600"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -233,5 +261,6 @@ export default function Sidebar({
         </DialogContent>
       </Dialog>
     </aside>
+    </>
   );
 }

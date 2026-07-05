@@ -5,11 +5,12 @@
 
 import React, { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { Download, ChevronDown, Globe, Film, MapPin, Search, LayoutGrid, Radio, Grid2x2, Flame, Lock, ShieldCheck, Tv, AlertCircle, Plus, Trash2, Link, FileUp, X as XIcon, BarChart2 } from 'lucide-react';
+import { Download, ChevronDown, Globe, Film, MapPin, Search, LayoutGrid, Radio, Grid2x2, Flame, Lock, ShieldCheck, Tv, AlertCircle, Plus, Trash2, Link, FileUp, X as XIcon, BarChart2, Sun, Moon } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { PORTAL_SOURCES, PlaylistSource, getCustomPlaylists, saveCustomPlaylist, deleteCustomPlaylist } from '../constants/portal_data';
-import { useTheme } from '../context/ThemeContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { useMediaQuery } from '../hooks/useMediaQuery';
+import { useTheme } from '../context/ThemeContext';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -24,6 +25,9 @@ interface HeaderProps {
 }
 
 export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName, isSplitView, onToggleSplitView, onOpenStats }: HeaderProps) {
+  const isMobileLandscape = useMediaQuery('(orientation: landscape) and (max-height: 500px)');
+  const { theme, toggleTheme } = useTheme();
+  
   const africaUrl = 'https://tvradiozap.eu/live/d/tvzaf.m3u';
   const europaUrl = 'https://tvradiozap.eu/live/d/tvzeu.m3u';
   const worldUrl = 'https://tvradiozap.eu/live/d/tvrztv.m3u';
@@ -152,125 +156,38 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
 
   return (
     <>
-      <header className="h-16 md:h-20 bg-card/80 backdrop-blur-md border-b border-border px-4 md:px-8 flex items-center justify-between sticky top-0 z-50 transition-colors duration-300">
+      <header className={`${isMobileLandscape ? 'h-10' : 'h-16 md:h-20'} bg-card/80 backdrop-blur-md border-b border-border px-4 md:px-8 flex items-center justify-between sticky top-0 z-50 transition-colors duration-300`}>
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-3">
             <div className="flex-shrink-0">
               <img 
                 src="https://image.noelshack.com/fichiers/2026/22/2/1779829245-moo-dy.png" 
                 alt="Moody Logo" 
-                className="h-6 md:h-8 w-auto object-contain brightness-110"
+                className={`${isMobileLandscape ? 'h-4' : 'h-6 md:h-8'} w-auto object-contain brightness-110`}
                 referrerPolicy="no-referrer"
               />
             </div>
           </div>
 
-          <div className="hidden xl:flex items-center gap-2">
+          <div className="hidden lg:flex items-center gap-1 xl:gap-2">
             {/* Country Selector Button */}
             <div className="relative">
               <Button
                 variant={isPortalOpen ? "secondary" : "ghost"}
                 onClick={() => setIsPortalOpen(!isPortalOpen)}
-                className="flex items-center gap-2 rounded-xl text-xs"
+                className="flex items-center gap-1.5 xl:gap-2 rounded-xl text-[10px] xl:text-xs px-2 xl:px-4 h-8 xl:h-10"
               >
                 <MapPin size={14} className="text-muted-foreground" />
                 COUNTRY
                 <ChevronDown className={`w-3 h-3 text-muted-foreground transition-transform ${isPortalOpen ? 'rotate-180' : ''}`} />
               </Button>
-
-              {isPortalOpen && (
-                <>
-                  <div className="fixed inset-0 z-40" onClick={() => setIsPortalOpen(false)} />
-                  <div className="absolute top-full left-0 mt-2 w-72 max-h-[80vh] bg-card border border-border rounded-2xl shadow-2xl overflow-hidden flex flex-col z-50 animate-in fade-in zoom-in-95 slide-in-from-top-4 duration-200 origin-top">
-                    <div className="p-3 border-b border-border">
-                      <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-3 h-3" />
-                        <input
-                          autoFocus
-                          type="text"
-                          placeholder={`Chercher ${portalTab === 'Country' ? 'pays' : 'genre'}...`}
-                          className="w-full bg-background border-none rounded-lg py-2 pl-9 pr-4 text-xs text-foreground focus:ring-2 focus:ring-white/50 outline-none"
-                          value={portalSearch}
-                          onChange={(e) => setPortalSearch(e.target.value)}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="p-1 bg-background flex gap-1 mx-1 mt-1 rounded-lg">
-                      <button
-                        onClick={() => { setPortalTab('Country'); setPortalSearch(''); }}
-                        className={`flex-1 py-1.5 rounded-lg text-[10px] font-black tracking-widest transition-colors ${portalTab === 'Country' ? 'bg-card text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-                      >
-                        PAYS
-                      </button>
-                      <button
-                        onClick={() => { setPortalTab('Genre'); setPortalSearch(''); }}
-                        className={`flex-1 py-1.5 rounded-lg text-[10px] font-black tracking-widest transition-colors ${portalTab === 'Genre' ? 'bg-card text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-                      >
-                        GENRES
-                      </button>
-                    </div>
-
-                    <div className="flex-1 overflow-y-auto p-2 custom-scrollbar grid grid-cols-1 gap-1">
-                      {filteredPortals.map((source) => (
-                        <button
-                          key={source.url}
-                          onClick={() => handlePortalSelect(source)}
-                          className="flex items-center gap-3 p-2 rounded-xl hover:bg-background transition-all text-left group"
-                        >
-                          <div className="w-8 h-8 flex-shrink-0 flex items-center justify-center overflow-hidden transition-colors">
-                            {source.code ? (
-                              <img 
-                                src={`https://flagcdn.com/w40/${source.code}.png`} 
-                                alt={source.name} 
-                                className="w-full h-full object-cover"
-                                referrerPolicy="no-referrer"
-                              />
-                            ) : (
-                              <Film size={14} className="text-zinc-600" />
-                            )}
-                          </div>
-                          <span className="text-[11px] font-bold text-zinc-400 group-hover:text-white truncate">
-                            {source.name}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-
-                    {customPlaylists.length > 0 && (
-                      <div className="border-t border-border p-2">
-                        <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500 px-2 py-1">Mes Playlists</p>
-                        {customPlaylists.map((pl) => (
-                          <div key={pl.url} className="flex items-center gap-2 p-2 rounded-xl hover:bg-background group">
-                            <button
-                              onClick={() => { onLoadPlaylist(pl.url); setIsPortalOpen(false); }}
-                              className="flex-1 text-left text-[11px] font-bold text-zinc-400 group-hover:text-white truncate"
-                            >
-                              {pl.name}
-                            </button>
-                            <button
-                              onClick={() => {
-                                deleteCustomPlaylist(pl.url);
-                                setCustomPlaylists(getCustomPlaylists());
-                              }}
-                              className="p-1 rounded hover:bg-red-500/10 text-zinc-600 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
-                            >
-                              <Trash2 size={12} />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
             </div>
 
             <Button
               variant={isAfricaActive ? "secondary" : "ghost"}
               onClick={() => onLoadPlaylist(africaUrl)}
               disabled={isLoading}
-              className="flex items-center gap-2 rounded-xl text-xs font-bold"
+              className="flex items-center gap-1.5 xl:gap-2 rounded-xl text-[10px] xl:text-xs px-2 xl:px-4 h-8 xl:h-10 font-bold"
             >
               <Globe size={14} className={isAfricaActive ? 'text-foreground' : 'text-muted-foreground'} />
               AFRICA
@@ -281,7 +198,7 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
               variant={isEuropaActive ? "secondary" : "ghost"}
               onClick={() => onLoadPlaylist(europaUrl)}
               disabled={isLoading}
-              className="flex items-center gap-2 rounded-xl text-xs font-bold"
+              className="flex items-center gap-1.5 xl:gap-2 rounded-xl text-[10px] xl:text-xs px-2 xl:px-4 h-8 xl:h-10 font-bold"
             >
               <MapPin size={14} className={isEuropaActive ? 'text-foreground' : 'text-muted-foreground'} />
               EUROPA
@@ -292,7 +209,7 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
               variant={isWorldActive ? "secondary" : "ghost"}
               onClick={() => onLoadPlaylist(worldUrl)}
               disabled={isLoading}
-              className="flex items-center gap-2 rounded-xl text-xs font-bold"
+              className="flex items-center gap-1.5 xl:gap-2 rounded-xl text-[10px] xl:text-xs px-2 xl:px-4 h-8 xl:h-10 font-bold"
             >
               <Search size={14} className={isWorldActive ? 'text-foreground' : 'text-muted-foreground'} />
               WORLD
@@ -303,7 +220,7 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
               variant={isRegionalActive ? "secondary" : "ghost"}
               onClick={() => onLoadPlaylist(regionalUrl)}
               disabled={isLoading}
-              className="flex items-center gap-2 rounded-xl text-xs font-bold"
+              className="flex items-center gap-1.5 xl:gap-2 rounded-xl text-[10px] xl:text-xs px-2 xl:px-4 h-8 xl:h-10 font-bold"
             >
               <LayoutGrid size={14} className={isRegionalActive ? 'text-foreground' : 'text-muted-foreground'} />
               REGIONAL
@@ -314,7 +231,7 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
               variant={isAdultActive ? "destructive" : "ghost"}
               onClick={handleAdultClick}
               disabled={isLoading}
-              className={`flex items-center gap-2 rounded-xl text-xs font-bold ${!isAdultActive && 'hover:text-destructive hover:bg-destructive/10'}`}
+              className={`flex items-center gap-1.5 xl:gap-2 rounded-xl text-[10px] xl:text-xs px-2 xl:px-4 h-8 xl:h-10 font-bold ${!isAdultActive && 'hover:text-destructive hover:bg-destructive/10'}`}
             >
               <Flame size={14} />
               XXX ADULT
@@ -325,7 +242,7 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
               variant="ghost"
               onClick={() => setIsCanalOpen(true)}
               disabled={isLoading}
-              className="flex items-center gap-2 rounded-xl text-xs font-bold"
+              className="flex items-center gap-1.5 xl:gap-2 rounded-xl text-[10px] xl:text-xs px-2 xl:px-4 h-8 xl:h-10 font-bold"
             >
               <Tv size={14} className="text-muted-foreground" />
               CANAL+
@@ -334,16 +251,35 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
             <Button
               variant="ghost"
               onClick={() => setIsImportOpen(true)}
-              className="flex items-center gap-2 rounded-xl text-xs font-bold"
+              className="flex items-center gap-1.5 xl:gap-2 rounded-xl text-[10px] xl:text-xs px-2 xl:px-4 h-8 xl:h-10 font-bold"
             >
               <Plus size={14} className="text-muted-foreground" /> IMPORT
+            </Button>
+            
+            <div className="w-px h-6 bg-border mx-1" />
+            
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleTheme}
+              className="rounded-xl h-8 w-8 xl:h-10 xl:w-10"
+              title="Changer le thème"
+            >
+              {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
             </Button>
           </div>
         </div>
 
         <div className="flex items-center gap-2 md:gap-4">
           {/* Mobile Quick Access buttons */}
-          <div className="flex xl:hidden items-center gap-1.5 overflow-x-auto scrollbar-none pr-2">
+          <div className="flex lg:hidden items-center gap-1.5 overflow-x-auto scrollbar-none pr-2">
+            <button
+              onClick={toggleTheme}
+              className="flex-shrink-0 p-2 rounded-lg transition-all active:scale-95 bg-card text-muted-foreground hover:text-foreground"
+              title="Changer le thème"
+            >
+              {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
             <button
               onClick={onToggleSplitView}
               className={`flex-shrink-0 p-2 rounded-lg transition-all active:scale-95 ${
@@ -449,6 +385,94 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
             </span>
           </div>
         </div>
+
+        {isPortalOpen && (
+          <>
+            <div className="fixed inset-0 z-40" onClick={() => setIsPortalOpen(false)} />
+            <div className="absolute top-full left-4 lg:left-[180px] w-[calc(100vw-2rem)] md:w-72 max-h-[80vh] bg-card border border-border rounded-2xl shadow-2xl overflow-hidden flex flex-col z-50 animate-in fade-in zoom-in-95 slide-in-from-top-4 duration-200 origin-top">
+              <div className="p-3 border-b border-border">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-3 h-3" />
+                  <input
+                    autoFocus
+                    type="text"
+                    placeholder={`Chercher ${portalTab === 'Country' ? 'pays' : 'genre'}...`}
+                    aria-label={`Chercher ${portalTab === 'Country' ? 'pays' : 'genre'}`}
+                    className="w-full bg-background border-none rounded-lg py-2 pl-9 pr-4 text-xs text-foreground focus:ring-2 focus:ring-white/50 outline-none"
+                    value={portalSearch}
+                    onChange={(e) => setPortalSearch(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="p-1 bg-background flex gap-1 mx-1 mt-1 rounded-lg">
+                <button
+                  onClick={() => { setPortalTab('Country'); setPortalSearch(''); }}
+                  className={`flex-1 py-1.5 rounded-lg text-[10px] font-black tracking-widest transition-colors ${portalTab === 'Country' ? 'bg-card text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                >
+                  PAYS
+                </button>
+                <button
+                  onClick={() => { setPortalTab('Genre'); setPortalSearch(''); }}
+                  className={`flex-1 py-1.5 rounded-lg text-[10px] font-black tracking-widest transition-colors ${portalTab === 'Genre' ? 'bg-card text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                >
+                  GENRES
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-2 custom-scrollbar grid grid-cols-1 gap-1">
+                {filteredPortals.map((source) => (
+                  <button
+                    key={source.url}
+                    onClick={() => handlePortalSelect(source)}
+                    className="flex items-center gap-3 p-2 rounded-xl hover:bg-background transition-all text-left group"
+                  >
+                    <div className="w-8 h-8 flex-shrink-0 flex items-center justify-center overflow-hidden transition-colors">
+                      {source.code ? (
+                        <img 
+                          src={`https://flagcdn.com/w40/${source.code}.png`} 
+                          alt={source.name} 
+                          className="w-full h-full object-cover"
+                          referrerPolicy="no-referrer"
+                        />
+                      ) : (
+                        <Film size={14} className="text-zinc-600" />
+                      )}
+                    </div>
+                    <span className="text-[11px] font-bold text-zinc-400 group-hover:text-white truncate">
+                      {source.name}
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              {customPlaylists.length > 0 && (
+                <div className="border-t border-border p-2">
+                  <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500 px-2 py-1">Mes Playlists</p>
+                  {customPlaylists.map((pl) => (
+                    <div key={pl.url} className="flex items-center gap-2 p-2 rounded-xl hover:bg-background group">
+                      <button
+                        onClick={() => { onLoadPlaylist(pl.url); setIsPortalOpen(false); }}
+                        className="flex-1 text-left text-[11px] font-bold text-zinc-400 group-hover:text-white truncate"
+                      >
+                        {pl.name}
+                      </button>
+                      <button
+                        onClick={() => {
+                          deleteCustomPlaylist(pl.url);
+                          setCustomPlaylists(getCustomPlaylists());
+                        }}
+                        className="p-1 rounded hover:bg-red-500/10 text-zinc-600 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
+        )}
       </header>
 
       {isPasscodeOpen && (
