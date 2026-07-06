@@ -72,15 +72,15 @@ export default function StatsModal({ isOpen, onClose }: StatsModalProps) {
         <div className="grid grid-cols-3 gap-4 p-6 border-b border-border bg-muted/20">
           <div className="bg-background rounded-2xl p-4 text-center border border-border">
             <p className="text-2xl font-black text-primary">{formatDuration(totalTime)}</p>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1">Temps total</p>
+            <p className="text-[0.625rem] text-muted-foreground uppercase tracking-widest mt-1">Temps total</p>
           </div>
           <div className="bg-background rounded-2xl p-4 text-center border border-border">
             <p className="text-2xl font-black text-primary">{topChannels.length}</p>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1">Chaînes vues</p>
+            <p className="text-[0.625rem] text-muted-foreground uppercase tracking-widest mt-1">Chaînes vues</p>
           </div>
           <div className="bg-background rounded-2xl p-4 text-center border border-border">
             <p className="text-2xl font-black text-primary">{categories.length}</p>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1">Catégories</p>
+            <p className="text-[0.625rem] text-muted-foreground uppercase tracking-widest mt-1">Catégories</p>
           </div>
         </div>
 

@@ -5,7 +5,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { Download, ChevronDown, Globe, Film, MapPin, Search, LayoutGrid, Radio, Grid2x2, Flame, Lock, ShieldCheck, Tv, AlertCircle, Plus, Trash2, Link, FileUp, X as XIcon, BarChart2 } from 'lucide-react';
+import { Download, ChevronDown, Globe, Film, MapPin, Search, LayoutGrid, Radio, Grid2x2, Flame, Lock, ShieldCheck, Tv, AlertCircle, Plus, Trash2, Link, FileUp, X as XIcon, BarChart2, Contrast } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { PORTAL_SOURCES, PlaylistSource, getCustomPlaylists, saveCustomPlaylist, deleteCustomPlaylist } from '../constants/portal_data';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -48,6 +48,21 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
   const [passcodeInput, setPasscodeInput] = useState('');
   const [passcodeError, setPasscodeError] = useState(false);
   const SECRET_CODE = 'GbLEWA';
+
+  // High Contrast State
+  const [isHighContrast, setIsHighContrast] = useState(() => {
+    return localStorage.getItem('moody-high-contrast') === 'true';
+  });
+
+  React.useEffect(() => {
+    if (isHighContrast) {
+      document.documentElement.classList.add('high-contrast');
+      localStorage.setItem('moody-high-contrast', 'true');
+    } else {
+      document.documentElement.classList.remove('high-contrast');
+      localStorage.setItem('moody-high-contrast', 'false');
+    }
+  }, [isHighContrast]);
 
   // Canal+ State
   const [isCanalOpen, setIsCanalOpen] = useState(false);
@@ -173,7 +188,7 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
               <Button
                 variant={isPortalOpen ? "secondary" : "ghost"}
                 onClick={() => setIsPortalOpen(!isPortalOpen)}
-                className="flex items-center gap-1.5 xl:gap-2 rounded-xl text-[10px] xl:text-xs px-2 xl:px-4 h-8 xl:h-10"
+                className="flex items-center gap-1.5 xl:gap-2 rounded-xl text-[0.625rem] xl:text-xs px-2 xl:px-4 h-8 xl:h-10"
               >
                 <MapPin size={14} className="text-muted-foreground" />
                 COUNTRY
@@ -185,7 +200,7 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
               variant={isAfricaActive ? "secondary" : "ghost"}
               onClick={() => onLoadPlaylist(africaUrl)}
               disabled={isLoading}
-              className="flex items-center gap-1.5 xl:gap-2 rounded-xl text-[10px] xl:text-xs px-2 xl:px-4 h-8 xl:h-10 font-bold"
+              className="flex items-center gap-1.5 xl:gap-2 rounded-xl text-[0.625rem] xl:text-xs px-2 xl:px-4 h-8 xl:h-10 font-bold"
             >
               <Globe size={14} className={isAfricaActive ? 'text-foreground' : 'text-muted-foreground'} />
               AFRICA
@@ -196,7 +211,7 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
               variant={isEuropaActive ? "secondary" : "ghost"}
               onClick={() => onLoadPlaylist(europaUrl)}
               disabled={isLoading}
-              className="flex items-center gap-1.5 xl:gap-2 rounded-xl text-[10px] xl:text-xs px-2 xl:px-4 h-8 xl:h-10 font-bold"
+              className="flex items-center gap-1.5 xl:gap-2 rounded-xl text-[0.625rem] xl:text-xs px-2 xl:px-4 h-8 xl:h-10 font-bold"
             >
               <MapPin size={14} className={isEuropaActive ? 'text-foreground' : 'text-muted-foreground'} />
               EUROPA
@@ -207,7 +222,7 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
               variant={isWorldActive ? "secondary" : "ghost"}
               onClick={() => onLoadPlaylist(worldUrl)}
               disabled={isLoading}
-              className="flex items-center gap-1.5 xl:gap-2 rounded-xl text-[10px] xl:text-xs px-2 xl:px-4 h-8 xl:h-10 font-bold"
+              className="flex items-center gap-1.5 xl:gap-2 rounded-xl text-[0.625rem] xl:text-xs px-2 xl:px-4 h-8 xl:h-10 font-bold"
             >
               <Search size={14} className={isWorldActive ? 'text-foreground' : 'text-muted-foreground'} />
               WORLD
@@ -218,7 +233,7 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
               variant={isRegionalActive ? "secondary" : "ghost"}
               onClick={() => onLoadPlaylist(regionalUrl)}
               disabled={isLoading}
-              className="flex items-center gap-1.5 xl:gap-2 rounded-xl text-[10px] xl:text-xs px-2 xl:px-4 h-8 xl:h-10 font-bold"
+              className="flex items-center gap-1.5 xl:gap-2 rounded-xl text-[0.625rem] xl:text-xs px-2 xl:px-4 h-8 xl:h-10 font-bold"
             >
               <LayoutGrid size={14} className={isRegionalActive ? 'text-foreground' : 'text-muted-foreground'} />
               REGIONAL
@@ -229,7 +244,7 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
               variant={isAdultActive ? "destructive" : "ghost"}
               onClick={handleAdultClick}
               disabled={isLoading}
-              className={`flex items-center gap-1.5 xl:gap-2 rounded-xl text-[10px] xl:text-xs px-2 xl:px-4 h-8 xl:h-10 font-bold ${!isAdultActive && 'hover:text-destructive hover:bg-destructive/10'}`}
+              className={`flex items-center gap-1.5 xl:gap-2 rounded-xl text-[0.625rem] xl:text-xs px-2 xl:px-4 h-8 xl:h-10 font-bold ${!isAdultActive && 'hover:text-destructive hover:bg-destructive/10'}`}
             >
               <Flame size={14} />
               XXX ADULT
@@ -240,7 +255,7 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
               variant="ghost"
               onClick={() => setIsCanalOpen(true)}
               disabled={isLoading}
-              className="flex items-center gap-1.5 xl:gap-2 rounded-xl text-[10px] xl:text-xs px-2 xl:px-4 h-8 xl:h-10 font-bold"
+              className="flex items-center gap-1.5 xl:gap-2 rounded-xl text-[0.625rem] xl:text-xs px-2 xl:px-4 h-8 xl:h-10 font-bold"
             >
               <Tv size={14} className="text-muted-foreground" />
               CANAL+
@@ -249,7 +264,7 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
             <Button
               variant="ghost"
               onClick={() => setIsImportOpen(true)}
-              className="flex items-center gap-1.5 xl:gap-2 rounded-xl text-[10px] xl:text-xs px-2 xl:px-4 h-8 xl:h-10 font-bold"
+              className="flex items-center gap-1.5 xl:gap-2 rounded-xl text-[0.625rem] xl:text-xs px-2 xl:px-4 h-8 xl:h-10 font-bold"
             >
               <Plus size={14} className="text-muted-foreground" /> IMPORT
             </Button>
@@ -259,6 +274,15 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
         <div className="flex items-center gap-2 md:gap-4">
           {/* Mobile Quick Access buttons */}
           <div className="flex lg:hidden items-center gap-1.5 overflow-x-auto scrollbar-none pr-2">
+            <button
+              onClick={() => setIsHighContrast(!isHighContrast)}
+              className={`flex-shrink-0 p-2 rounded-lg transition-all active:scale-95 ${
+                isHighContrast ? 'bg-card text-white' : 'bg-card text-muted-foreground'
+              }`}
+              title="Mode Contraste Élevé"
+            >
+              <Contrast size={18} />
+            </button>
             <button
               onClick={onToggleSplitView}
               className={`flex-shrink-0 p-2 rounded-lg transition-all active:scale-95 ${
@@ -348,6 +372,17 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
 
           <div className="hidden lg:flex items-center gap-4">
             <button
+              onClick={() => setIsHighContrast(!isHighContrast)}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all text-xs font-bold uppercase tracking-wider ${
+                isHighContrast 
+                  ? 'bg-white/10 text-white' 
+                  : 'bg-zinc-900 text-zinc-400 hover:text-white'
+              }`}
+              title="Mode Contraste Élevé"
+            >
+              <Contrast size={14} />
+            </button>
+            <button
               onClick={onToggleSplitView}
               className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all text-xs font-bold uppercase tracking-wider ${
                 isSplitView 
@@ -358,7 +393,7 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
               <Grid2x2 size={14} /> {isSplitView ? 'QUITTER MULTI' : 'MULTI-ÉCRAN'}
             </button>
 
-            <span className="flex items-center gap-2 text-[10px] font-black text-white uppercase tracking-[0.2em]">
+            <span className="flex items-center gap-2 text-[0.625rem] font-black text-white uppercase tracking-[0.2em]">
               <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
               SYSTEM LIVE
             </span>
@@ -387,13 +422,13 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
               <div className="p-1 bg-background flex gap-1 mx-1 mt-1 rounded-lg">
                 <button
                   onClick={() => { setPortalTab('Country'); setPortalSearch(''); }}
-                  className={`flex-1 py-1.5 rounded-lg text-[10px] font-black tracking-widest transition-colors ${portalTab === 'Country' ? 'bg-card text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                  className={`flex-1 py-1.5 rounded-lg text-[0.625rem] font-black tracking-widest transition-colors ${portalTab === 'Country' ? 'bg-card text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
                 >
                   PAYS
                 </button>
                 <button
                   onClick={() => { setPortalTab('Genre'); setPortalSearch(''); }}
-                  className={`flex-1 py-1.5 rounded-lg text-[10px] font-black tracking-widest transition-colors ${portalTab === 'Genre' ? 'bg-card text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                  className={`flex-1 py-1.5 rounded-lg text-[0.625rem] font-black tracking-widest transition-colors ${portalTab === 'Genre' ? 'bg-card text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
                 >
                   GENRES
                 </button>
@@ -418,7 +453,7 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
                         <Film size={14} className="text-zinc-600" />
                       )}
                     </div>
-                    <span className="text-[11px] font-bold text-zinc-400 group-hover:text-white truncate">
+                    <span className="text-[0.6875rem] font-bold text-zinc-400 group-hover:text-white truncate">
                       {source.name}
                     </span>
                   </button>
@@ -427,12 +462,12 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
 
               {customPlaylists.length > 0 && (
                 <div className="border-t border-border p-2">
-                  <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500 px-2 py-1">Mes Playlists</p>
+                  <p className="text-[0.5625rem] font-black uppercase tracking-widest text-zinc-500 px-2 py-1">Mes Playlists</p>
                   {customPlaylists.map((pl) => (
                     <div key={pl.url} className="flex items-center gap-2 p-2 rounded-xl hover:bg-background group">
                       <button
                         onClick={() => { onLoadPlaylist(pl.url); setIsPortalOpen(false); }}
-                        className="flex-1 text-left text-[11px] font-bold text-zinc-400 group-hover:text-white truncate"
+                        className="flex-1 text-left text-[0.6875rem] font-bold text-zinc-400 group-hover:text-white truncate"
                       >
                         {pl.name}
                       </button>
@@ -497,7 +532,7 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
                           className="flex items-center gap-2 text-destructive"
                         >
                           <AlertCircle size={12} />
-                          <span className="text-[10px] font-bold uppercase tracking-[0.4em]">Code invalide</span>
+                          <span className="text-[0.625rem] font-bold uppercase tracking-[0.4em]">Code invalide</span>
                         </motion.div>
                       )}
                     </AnimatePresence>
@@ -507,7 +542,7 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
                 <Button 
                   type="submit"
                   size="lg"
-                  className="w-full bg-white hover:bg-zinc-200 text-black text-[11px] font-black uppercase tracking-[0.4em] h-14 rounded-2xl shadow-xl flex items-center justify-center gap-3 group relative overflow-hidden"
+                  className="w-full bg-white hover:bg-zinc-200 text-black text-[0.6875rem] font-black uppercase tracking-[0.4em] h-14 rounded-2xl shadow-xl flex items-center justify-center gap-3 group relative overflow-hidden"
                 >
                   <ShieldCheck size={18} className="group-hover:scale-110 transition-transform" />
                   DÉVERROUILLER
@@ -563,13 +598,13 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
                     {importError && (
                       <div className="flex items-center gap-2 text-destructive mt-1 justify-center">
                         <AlertCircle size={12} />
-                        <span className="text-[10px] font-bold uppercase tracking-widest">{importError}</span>
+                        <span className="text-[0.625rem] font-bold uppercase tracking-widest">{importError}</span>
                       </div>
                     )}
                     <Button
                       onClick={() => handleImportSubmit(importUrl, importName)}
                       size="lg"
-                      className="w-full bg-white hover:bg-zinc-200 text-black text-[11px] font-black uppercase tracking-[0.2em] h-14 rounded-2xl shadow-xl flex items-center justify-center gap-2 group mt-2 transition-all">
+                      className="w-full bg-white hover:bg-zinc-200 text-black text-[0.6875rem] font-black uppercase tracking-[0.2em] h-14 rounded-2xl shadow-xl flex items-center justify-center gap-2 group mt-2 transition-all">
                       <Plus size={16} className="group-hover:rotate-90 transition-transform duration-300" />
                       CHARGER LA PLAYLIST
                     </Button>
@@ -637,7 +672,7 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
                           className="flex items-center gap-2 text-destructive"
                         >
                           <AlertCircle size={12} />
-                          <span className="text-[10px] font-bold uppercase tracking-[0.4em]">Code invalide</span>
+                          <span className="text-[0.625rem] font-bold uppercase tracking-[0.4em]">Code invalide</span>
                         </motion.div>
                       )}
                     </AnimatePresence>
@@ -647,7 +682,7 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
                 <Button 
                   type="submit"
                   size="lg"
-                  className="w-full bg-white hover:bg-zinc-200 text-black text-[11px] font-black uppercase tracking-[0.4em] h-14 rounded-2xl shadow-xl flex items-center justify-center gap-3 group relative overflow-hidden"
+                  className="w-full bg-white hover:bg-zinc-200 text-black text-[0.6875rem] font-black uppercase tracking-[0.4em] h-14 rounded-2xl shadow-xl flex items-center justify-center gap-3 group relative overflow-hidden"
                 >
                   <Download size={18} className="group-hover:scale-110 transition-transform" />
                   VALIDER ET TÉLÉCHARGER

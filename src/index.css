@@ -92,3 +92,19 @@
   --input: #27272a;
   --ring: #3f3f46;
 }
+
+:root.high-contrast, .dark.high-contrast {
+  --border: #71717a;
+  --input: #71717a;
+  --muted-foreground: #e4e4e7;
+  --ring: #ffffff;
+}
+
+@media (prefers-contrast: more) {
+  :root, .dark {
+    --border: #71717a;
+    --input: #71717a;
+    --muted-foreground: #e4e4e7;
+    --ring: #ffffff;
+  }
+}

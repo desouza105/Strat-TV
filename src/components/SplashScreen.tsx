@@ -84,7 +84,7 @@ export default function SplashScreen({ onComplete }: { onComplete: () => void })
             className="flex items-center gap-3 mb-16"
           >
             <div className="w-8 h-[1px] bg-white/20" />
-            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-500">
+            <p className="text-[0.625rem] font-black uppercase tracking-[0.4em] text-zinc-500">
               Expérience Premium
             </p>
             <div className="w-8 h-[1px] bg-white/20" />
@@ -107,10 +107,10 @@ export default function SplashScreen({ onComplete }: { onComplete: () => void })
           </div>
           
           <div className="flex justify-between w-full items-center">
-            <span className="text-[9px] font-black tracking-widest text-zinc-500 uppercase">
+            <span className="text-[0.5625rem] font-black tracking-widest text-zinc-500 uppercase">
               {progress < 30 ? 'Connexion' : progress < 70 ? 'Chargement' : 'Initialisation'}
             </span>
-            <span className="text-[10px] font-black tracking-widest text-white font-mono opacity-80">
+            <span className="text-[0.625rem] font-black tracking-widest text-white font-mono opacity-80">
               {Math.round(progress)}%
             </span>
           </div>
@@ -129,7 +129,7 @@ export default function SplashScreen({ onComplete }: { onComplete: () => void })
 
       <motion.div 
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 2, delay: 1 }}
-        className="absolute bottom-8 right-8 md:bottom-12 md:right-12 text-[9px] font-black text-white/20 uppercase tracking-[0.4em] font-mono"
+        className="absolute bottom-8 right-8 md:bottom-12 md:right-12 text-[0.5625rem] font-black text-white/20 uppercase tracking-[0.4em] font-mono"
       >
         SYS.v1.2
       </motion.div>

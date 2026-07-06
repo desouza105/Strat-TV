@@ -5,7 +5,7 @@
 
 import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import Hls from 'hls.js';
-import { Play, Pause, Volume2, VolumeX, Maximize, Loader2, AlertCircle, PictureInPicture2, Settings, Timer, Captions, CaptionsOff, Check } from 'lucide-react';
+import { Play, Pause, Volume2, VolumeX, Maximize, Loader2, AlertCircle, PictureInPicture2, Settings, Timer, Captions, CaptionsOff, Check, Cast } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface AudioTrack {
@@ -45,6 +45,8 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isPipAvailable, setIsPipAvailable] = useState(false);
+  const [isCastAvailable, setIsCastAvailable] = useState(false);
+  const [castState, setCastState] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
   const [levels, setLevels] = useState<{ index: number; height: number; bitrate: number }[]>([]);
   const [currentLevel, setCurrentLevel] = useState<number>(-1); // -1 for Auto
   const [isQualityOpen, setIsQualityOpen] = useState(false);
@@ -54,6 +56,9 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
   const [activeAudio, setActiveAudio] = useState<number>(-1);
   const [activeSubtitle, setActiveSubtitle] = useState<number>(-1);
   const [showTracksMenu, setShowTracksMenu] = useState(false);
+
+  const hasBufferedFragmentRef = useRef(false);
+  const usedProxyFallbackRef = useRef(false);
 
   useImperativeHandle(ref, () => ({
     togglePlay,
@@ -74,6 +79,36 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
       document.pictureInPictureEnabled && 
       !videoRef.current?.disablePictureInPicture
     );
+
+    const video = videoRef.current;
+    if (!video) return;
+
+    if ('WebKitPlaybackTargetAvailabilityEvent' in window) {
+      const handleAirPlayAvailability = (e: any) => {
+        setIsCastAvailable(e.availability === 'available');
+      };
+      video.addEventListener('webkitplaybacktargetavailabilitydidchange', handleAirPlayAvailability);
+      return () => video.removeEventListener('webkitplaybacktargetavailabilitydidchange', handleAirPlayAvailability);
+    } else if ((video as any).remote) {
+      const remote = (video as any).remote;
+      remote.watchAvailability((available: boolean) => {
+        setIsCastAvailable(available);
+      }).catch(() => {
+        setIsCastAvailable(true); // Fallback
+      });
+
+      const updateState = (e: any) => {
+        setCastState(e.target.state);
+      };
+      remote.addEventListener('connect', updateState);
+      remote.addEventListener('connecting', updateState);
+      remote.addEventListener('disconnect', updateState);
+      return () => {
+        remote.removeEventListener('connect', updateState);
+        remote.removeEventListener('connecting', updateState);
+        remote.removeEventListener('disconnect', updateState);
+      };
+    }
   }, []);
 
   useEffect(() => {
@@ -87,6 +122,9 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
     setActiveAudio(-1);
     setActiveSubtitle(-1);
     setShowTracksMenu(false);
+    
+    hasBufferedFragmentRef.current = false;
+    usedProxyFallbackRef.current = false;
 
     // Clean up previous HLS instance
     if (hlsRef.current) {
@@ -103,14 +141,14 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
       if (onError) onError("Native video error");
     };
 
-    if (Hls.isSupported()) {
+    const initHlsInstance = (sourceUrl: string) => {
       const hls = new Hls({
         enableWorker: true,
         lowLatencyMode: true,
         backBufferLength: 60,
       });
       hlsRef.current = hls;
-      hls.loadSource(url);
+      hls.loadSource(sourceUrl);
       hls.attachMedia(video);
 
       hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
@@ -165,8 +203,19 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
         }
       });
 
+      hls.on(Hls.Events.FRAG_BUFFERED, () => {
+        hasBufferedFragmentRef.current = true;
+      });
+
       hls.on(Hls.Events.ERROR, (_event, data) => {
         if (data.fatal) {
+          if (data.type === Hls.ErrorTypes.NETWORK_ERROR && !hasBufferedFragmentRef.current && !usedProxyFallbackRef.current) {
+            usedProxyFallbackRef.current = true;
+            hls.destroy();
+            initHlsInstance(`/api/stream-proxy?url=${encodeURIComponent(url)}`);
+            return;
+          }
+
           let errorMessage = "Stream error";
           switch (data.type) {
             case Hls.ErrorTypes.NETWORK_ERROR:
@@ -188,6 +237,10 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
           if (onError) onError(errorMessage);
         }
       });
+    };
+
+    if (Hls.isSupported()) {
+      initHlsInstance(url);
     } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
       // For Safari native HLS support
       video.src = url;
@@ -258,6 +311,20 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
     }
   };
 
+  const toggleCast = async () => {
+    if (!videoRef.current) return;
+    
+    if ('webkitShowPlaybackTargetPicker' in videoRef.current) {
+      (videoRef.current as any).webkitShowPlaybackTargetPicker();
+    } else if ((videoRef.current as any).remote) {
+      try {
+        await (videoRef.current as any).remote.prompt();
+      } catch (err) {
+        console.error("Failed to prompt remote playback:", err);
+      }
+    }
+  };
+
   const changeQuality = (index: number) => {
     if (hlsRef.current) {
       hlsRef.current.currentLevel = index;
@@ -286,6 +353,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
         playsInline
+        {...{ 'x-webkit-airplay': 'allow' }}
       />
 
       {/* Loading Overlay */}
@@ -347,7 +415,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                 <div className="relative">
                   <button 
                     onClick={() => setIsQualityOpen(!isQualityOpen)}
-                    className="flex items-center justify-center gap-1.5 px-3 py-1.5 min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 hover:bg-white/20 rounded-lg transition-colors text-white text-[10px] font-black uppercase tracking-widest border border-white/20"
+                    className="flex items-center justify-center gap-1.5 px-3 py-1.5 min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 hover:bg-white/20 rounded-lg transition-colors text-white text-[0.625rem] font-black uppercase tracking-widest border border-white/20"
                     aria-label="Paramètres de qualité"
                   >
                     <Settings className={`w-3.5 h-3.5 ${isQualityOpen ? 'animate-spin-slow' : ''}`} />
@@ -363,13 +431,13 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                         transition={{ type: "spring", bounce: 0, duration: 0.4 }}
                         className="absolute bottom-full right-0 mb-2 w-32 bg-card border border-border rounded-xl shadow-2xl overflow-hidden z-50"
                       >
-                        <div className="p-1 uppercase text-[10px] font-black text-muted-foreground border-b border-border text-center bg-background/50">
+                        <div className="p-1 uppercase text-[0.625rem] font-black text-muted-foreground border-b border-border text-center bg-background/50">
                           Qualité
                         </div>
                         <div className="max-h-48 overflow-y-auto custom-scrollbar">
                           <button
                             onClick={() => changeQuality(-1)}
-                            className={`w-full px-4 py-2 text-left text-[11px] font-bold transition-colors ${currentLevel === -1 ? 'bg-brand-primary text-white' : 'text-foreground hover:bg-zinc-800'}`}
+                            className={`w-full px-4 py-2 text-left text-[0.6875rem] font-bold transition-colors ${currentLevel === -1 ? 'bg-brand-primary text-white' : 'text-foreground hover:bg-zinc-800'}`}
                           >
                             AUTO
                           </button>
@@ -377,7 +445,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                             <button
                               key={level.index}
                               onClick={() => changeQuality(level.index)}
-                              className={`w-full px-4 py-2 text-left text-[11px] font-bold transition-colors ${currentLevel === level.index ? 'bg-brand-primary text-white' : 'text-foreground hover:bg-zinc-800'}`}
+                              className={`w-full px-4 py-2 text-left text-[0.6875rem] font-bold transition-colors ${currentLevel === level.index ? 'bg-brand-primary text-white' : 'text-foreground hover:bg-zinc-800'}`}
                             >
                               {level.height}P
                             </button>
@@ -397,6 +465,17 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                   aria-label="Afficher en mode miniature (PiP)"
                 >
                   <PictureInPicture2 className="w-5 h-5" />
+                </button>
+              )}
+
+              {isCastAvailable && (
+                <button 
+                  onClick={toggleCast}
+                  className={`p-2 flex items-center justify-center min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 hover:bg-white/20 rounded-full transition-colors ${castState === 'connected' ? 'text-brand-primary' : 'text-white'}`}
+                  title="Diffuser"
+                  aria-label="Diffuser sur un autre appareil"
+                >
+                  <Cast className={`w-5 h-5 ${castState === 'connected' ? 'fill-current' : ''}`} />
                 </button>
               )}
 
@@ -424,7 +503,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                           {/* Pistes audio */}
                           {audioTracks.length > 1 && (
                             <div className="mb-3">
-                              <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-2 px-1">
+                              <p className="text-[0.5625rem] font-black text-zinc-500 uppercase tracking-widest mb-2 px-1">
                                 Piste audio
                               </p>
                               {audioTracks.map(track => (
@@ -438,7 +517,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                                     {track.name}
                                   </span>
                                   {track.lang && (
-                                    <span className="text-[10px] text-zinc-600 uppercase">
+                                    <span className="text-[0.625rem] text-zinc-600 uppercase">
                                       {track.lang}
                                     </span>
                                   )}
@@ -458,7 +537,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                           {/* Sous-titres */}
                           {subtitleTracks.length > 0 && (
                             <div>
-                              <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-2 px-1">
+                              <p className="text-[0.5625rem] font-black text-zinc-500 uppercase tracking-widest mb-2 px-1">
                                 Sous-titres
                               </p>
                               
@@ -487,7 +566,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                                   </span>
                                   <span className="flex items-center gap-2">
                                     {track.lang && (
-                                      <span className="text-[10px] text-zinc-600 uppercase">
+                                      <span className="text-[0.625rem] text-zinc-600 uppercase">
                                         {track.lang}
                                       </span>
                                     )}
@@ -526,7 +605,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                         exit={{ opacity: 0, scale: 0.9, y: 5 }}
                         className="absolute bottom-full right-0 mb-2 bg-zinc-900 border border-zinc-700 rounded-2xl p-3 z-20 min-w-[160px] shadow-2xl"
                       >
-                        <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-2 px-1">
+                        <p className="text-[0.5625rem] font-black text-zinc-500 uppercase tracking-widest mb-2 px-1">
                           Arrêter dans
                         </p>
                         {[15, 30, 60, 90].map(min => (
@@ -539,7 +618,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                             className="flex items-center justify-between w-full px-3 py-2.5 rounded-xl text-sm font-bold text-zinc-300 hover:bg-white/10 hover:text-white transition-colors"
                           >
                             <span>{min} min</span>
-                            <span className="text-[10px] text-zinc-600">
+                            <span className="text-[0.625rem] text-zinc-600">
                               {min >= 60 ? `${min/60}h` : ''}
                             </span>
                           </button>
