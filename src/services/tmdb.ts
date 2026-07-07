@@ -9,10 +9,11 @@ export const SMALL_POSTER_SIZE = 'w185';
 const fetchFromAPI = async (endpoint: string, params: Record<string, string> = {}) => {
   const queryParams = new URLSearchParams({
     language: 'fr-FR',
+    endpoint: endpoint,
     ...params,
   });
 
-  const response = await fetch(`/api/tmdb${endpoint}?${queryParams}`, {
+  const response = await fetch(`/api/tmdb?${queryParams}`, {
     headers: {
       accept: 'application/json',
     }

@@ -1,16 +1,6 @@
 export default async function handler(req: any, res: any) {
   try {
-    const url = new URL(req.url, `http://${req.headers.host}`);
-    let endpoint = url.pathname.replace('/api/tmdb', '');
-    
-    // Fallback if the path didn't start with /api/tmdb exactly
-    if (!endpoint || endpoint === url.pathname) {
-      // For Vercel, req.query might contain the path or it's accessible via req.url
-      const match = req.url.match(/\/api\/tmdb(.*)/);
-      endpoint = match ? match[1] : req.url;
-      // Remove query params from endpoint string if they exist
-      endpoint = endpoint.split('?')[0];
-    }
+    let endpoint = req.query.endpoint as string;
     
     if (!endpoint) endpoint = '/';
 
@@ -29,7 +19,10 @@ export default async function handler(req: any, res: any) {
     }
 
     // Convert the query object to a query string
-    const queryParams = new URLSearchParams(req.query as Record<string, string>).toString();
+    const queryParamsObj = { ...req.query };
+    delete queryParamsObj.endpoint;
+    const queryParams = new URLSearchParams(queryParamsObj as Record<string, string>).toString();
+
     let tmdbUrl = `https://api.themoviedb.org/3${endpoint}${queryParams ? `?${queryParams}` : ''}`;
 
     const headers: HeadersInit = {

@@ -319,9 +319,9 @@ async function startServer() {
   const PORT = 3000;
 
   // TMDB API Proxy
-  app.get("/api/tmdb/*", async (req, res) => {
+  app.get("/api/tmdb", async (req, res) => {
     try {
-      const endpoint = '/' + req.params[0];
+      const endpoint = (req.query.endpoint as string) || '/';
       
       if (!endpoint.startsWith('/') || endpoint.includes('..')) {
         return res.status(400).json({ error: "Invalid endpoint" });
@@ -338,7 +338,9 @@ async function startServer() {
       }
 
       // Convert the query object to a query string
-      const queryParams = new URLSearchParams(req.query as Record<string, string>).toString();
+      const queryParamsObj = { ...req.query };
+      delete queryParamsObj.endpoint;
+      const queryParams = new URLSearchParams(queryParamsObj as Record<string, string>).toString();
       let tmdbUrl = `https://api.themoviedb.org/3${endpoint}${queryParams ? `?${queryParams}` : ''}`;
 
       const headers: HeadersInit = {

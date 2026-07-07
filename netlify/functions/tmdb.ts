@@ -2,10 +2,10 @@ import { Handler } from '@netlify/functions';
 
 export const handler: Handler = async (event, context) => {
   try {
-    const path = event.path;
-    let endpoint = path.replace('/.netlify/functions/tmdb', '').replace('/api/tmdb', '');
+    let endpoint = event.queryStringParameters?.endpoint || '/';
+    // let endpoint
     
-    if (!endpoint) endpoint = '/';
+    // if (!endpoint) endpoint = '/';
 
     if (!endpoint.startsWith('/') || endpoint.includes('..')) {
       return { statusCode: 400, body: JSON.stringify({ error: "Invalid endpoint" }) };
@@ -22,7 +22,10 @@ export const handler: Handler = async (event, context) => {
     }
 
     // Convert the query object to a query string
-    const queryParams = new URLSearchParams(event.queryStringParameters as Record<string, string>).toString();
+    const queryParamsObj = { ...(event.queryStringParameters || {}) };
+    delete queryParamsObj.endpoint;
+    const queryParams = new URLSearchParams(queryParamsObj as Record<string, string>).toString();
+
     let tmdbUrl = `https://api.themoviedb.org/3${endpoint}${queryParams ? `?${queryParams}` : ''}`;
 
     const headers: HeadersInit = {
