@@ -44,6 +44,8 @@ export default function App() {
   const [sleepTimerEnd, setSleepTimerEnd] = useState<number | null>(null);
   const [sleepTimerRemaining, setSleepTimerRemaining] = useState<number>(0);
   const sleepTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const loadRequestIdRef = useRef(0);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const startSleepTimer = useCallback((minutes: number) => {
     if (sleepTimerRef.current) clearInterval(sleepTimerRef.current);
@@ -237,7 +239,7 @@ export default function App() {
     return PORTAL_SOURCES.find(s => s.url === currentPlaylistUrl)?.name || '';
   }, [currentPlaylistUrl]);
 
-  const checkChannelsHealth = useCallback(async (channelList: IPTVChannel[]) => {
+  const checkChannelsHealth = useCallback(async (channelList: IPTVChannel[], requestId: number) => {
     // Initialize all as checking
     const initialStatus: Record<string, 'checking' | 'active' | 'dead'> = {};
     channelList.forEach(c => {
@@ -248,6 +250,8 @@ export default function App() {
     // Check in chunks to not overload the API or browser
     const chunkSize = 20;
     for (let i = 0; i < channelList.length; i += chunkSize) {
+      if (requestId !== loadRequestIdRef.current) return;
+
       const chunk = channelList.slice(i, i + chunkSize);
       const urls = chunk.map(c => c.url);
 
@@ -258,8 +262,11 @@ export default function App() {
           body: JSON.stringify({ urls })
         });
 
+        if (requestId !== loadRequestIdRef.current) return;
+
         if (response.ok) {
           const results = await response.json();
+          if (requestId !== loadRequestIdRef.current) return;
           setChannelStatus(prev => {
             const next = { ...prev };
             Object.keys(results).forEach(url => {
@@ -278,6 +285,7 @@ export default function App() {
           });
         }
       } catch (err) {
+        if (requestId !== loadRequestIdRef.current) return;
         console.error('Failed to check health for chunk', err);
         // Fallback to active on network error (likely API missing)
         setChannelStatus(prev => {
@@ -292,6 +300,15 @@ export default function App() {
   }, []);
 
   const loadPlaylist = useCallback(async (url: string) => {
+    loadRequestIdRef.current += 1;
+    const requestId = loadRequestIdRef.current;
+
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+
     setIsLoading(true);
     setError(null);
     setCurrentPlaylistUrl(url);
@@ -299,16 +316,16 @@ export default function App() {
     try {
       let response;
       if (url.startsWith('blob:')) {
-        response = await fetch(url);
+        response = await fetch(url, { signal: abortController.signal });
         if (!response.ok) throw new Error('Impossible de lire le fichier local');
       } else {
         // Use our internal proxy to avoid CORS issues for remote URLs
         const proxyUrl = `/api/proxy?url=${encodeURIComponent(url)}`;
-        response = await fetch(proxyUrl);
+        response = await fetch(proxyUrl, { signal: abortController.signal });
         
         if (!response.ok) {
           // Fallback to direct fetch if proxy fails for some reason
-          response = await fetch(url);
+          response = await fetch(url, { signal: abortController.signal });
           if (!response.ok) throw new Error('Impossible de charger la playlist IPTV');
         }
       }
@@ -320,12 +337,15 @@ export default function App() {
         throw new Error('Aucune chaîne valide trouvée dans la playlist');
       }
       
+      if (requestId !== loadRequestIdRef.current) return;
+
       setChannels(parsedChannels);
       setSelectedChannel(parsedChannels[0]);
 
       // Start health check in background
-      checkChannelsHealth(parsedChannels);
+      checkChannelsHealth(parsedChannels, requestId);
     } catch (err: any) {
+      if (err.name === 'AbortError' || requestId !== loadRequestIdRef.current) return;
       console.error(err);
       setError(
         err.message.includes('Failed to fetch') 
@@ -333,7 +353,9 @@ export default function App() {
           : err.message
       );
     } finally {
-      setIsLoading(false);
+      if (requestId === loadRequestIdRef.current) {
+        setIsLoading(false);
+      }
     }
   }, [checkChannelsHealth]);
 

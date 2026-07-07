@@ -59,6 +59,42 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
 
   const hasBufferedFragmentRef = useRef(false);
   const usedProxyFallbackRef = useRef(false);
+  const retryCountRef = useRef(0);
+  const pendingRetryTimeoutRef = useRef<NodeJS.Timeout | number | null>(null);
+  const stallTimeoutRef = useRef<NodeJS.Timeout | number | null>(null);
+  const lastCurrentTimeRef = useRef<number>(0);
+  const playPromiseRef = useRef<Promise<void> | null>(null);
+  const [needsUnmutePrompt, setNeedsUnmutePrompt] = useState(false);
+
+  const safePlay = async () => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (playPromiseRef.current) {
+      await playPromiseRef.current.catch(() => {});
+    }
+
+    try {
+      playPromiseRef.current = video.play();
+      await playPromiseRef.current;
+      setIsPlaying(true);
+    } catch (error: any) {
+      if (error.name === 'NotAllowedError') {
+        video.muted = true;
+        setIsMuted(true);
+        setNeedsUnmutePrompt(true);
+        try {
+          playPromiseRef.current = video.play();
+          await playPromiseRef.current;
+          setIsPlaying(true);
+        } catch (e) {
+          setIsPlaying(false);
+        }
+      } else {
+        setIsPlaying(false);
+      }
+    }
+  };
 
   useImperativeHandle(ref, () => ({
     togglePlay,
@@ -69,6 +105,9 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
         videoRef.current.volume = value;
         setVolume(value);
         setIsMuted(value === 0);
+        if (value > 0) {
+          setNeedsUnmutePrompt(false);
+        }
       }
     }
   }));
@@ -125,6 +164,16 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
     
     hasBufferedFragmentRef.current = false;
     usedProxyFallbackRef.current = false;
+    retryCountRef.current = 0;
+    lastCurrentTimeRef.current = 0;
+    if (pendingRetryTimeoutRef.current) {
+      clearTimeout(pendingRetryTimeoutRef.current as number);
+      pendingRetryTimeoutRef.current = null;
+    }
+    if (stallTimeoutRef.current) {
+      clearTimeout(stallTimeoutRef.current as number);
+      stallTimeoutRef.current = null;
+    }
 
     // Clean up previous HLS instance
     if (hlsRef.current) {
@@ -133,7 +182,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
 
     const handleLoadedMetadata = () => {
       setIsLoading(false);
-      video.play().catch(() => setIsPlaying(false));
+      safePlay();
     };
 
     const handleVideoError = () => {
@@ -190,9 +239,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
           setSubtitleTracks([]);
         }
 
-        video.play().catch(() => {
-          setIsPlaying(false);
-        });
+        safePlay();
       });
 
       hls.on(Hls.Events.LEVEL_SWITCHED, (_event, data) => {
@@ -207,10 +254,23 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
         hasBufferedFragmentRef.current = true;
       });
 
+      const MAX_RETRIES = 2;
+
       hls.on(Hls.Events.ERROR, (_event, data) => {
+        if (!data.fatal && (data.details === Hls.ErrorDetails.BUFFER_STALLED_ERROR || (data.details as string) === 'bufferStalledError')) {
+          if (videoRef.current) {
+            const currentTime = videoRef.current.currentTime;
+            if (currentTime === lastCurrentTimeRef.current) {
+              videoRef.current.currentTime += 0.1;
+            }
+            lastCurrentTimeRef.current = currentTime;
+          }
+        }
+
         if (data.fatal) {
           if (data.type === Hls.ErrorTypes.NETWORK_ERROR && !hasBufferedFragmentRef.current && !usedProxyFallbackRef.current) {
             usedProxyFallbackRef.current = true;
+            retryCountRef.current += 1;
             hls.destroy();
             initHlsInstance(`/api/stream-proxy?url=${encodeURIComponent(url)}`);
             return;
@@ -219,15 +279,31 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
           let errorMessage = "Stream error";
           switch (data.type) {
             case Hls.ErrorTypes.NETWORK_ERROR:
-              errorMessage = "Network error encountered.";
-              setError(errorMessage);
-              hls.startLoad();
-              break;
+              if (retryCountRef.current < MAX_RETRIES) {
+                retryCountRef.current += 1;
+                pendingRetryTimeoutRef.current = setTimeout(() => {
+                  hls.startLoad();
+                }, 1500 * retryCountRef.current);
+                return; // Do not call onError or setError yet
+              } else {
+                errorMessage = "Flux indisponible après plusieurs tentatives.";
+                setError(errorMessage);
+                if (onError) onError(errorMessage);
+                return;
+              }
             case Hls.ErrorTypes.MEDIA_ERROR:
-              errorMessage = "Media error encountered.";
-              setError(errorMessage);
-              hls.recoverMediaError();
-              break;
+              if (retryCountRef.current < MAX_RETRIES) {
+                retryCountRef.current += 1;
+                pendingRetryTimeoutRef.current = setTimeout(() => {
+                  hls.recoverMediaError();
+                }, 1500 * retryCountRef.current);
+                return; // Do not call onError or setError yet
+              } else {
+                errorMessage = "Flux indisponible après plusieurs tentatives.";
+                setError(errorMessage);
+                if (onError) onError(errorMessage);
+                return;
+              }
             default:
               errorMessage = "Stream unavailable.";
               setError(errorMessage);
@@ -252,6 +328,12 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
     }
 
     return () => {
+      if (pendingRetryTimeoutRef.current) {
+        clearTimeout(pendingRetryTimeoutRef.current as number);
+      }
+      if (stallTimeoutRef.current) {
+        clearTimeout(stallTimeoutRef.current as number);
+      }
       if (hlsRef.current) {
         hlsRef.current.destroy();
       }
@@ -263,8 +345,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
   const togglePlay = () => {
     if (videoRef.current) {
       if (videoRef.current.paused) {
-        videoRef.current.play();
-        setIsPlaying(true);
+        safePlay();
       } else {
         videoRef.current.pause();
         setIsPlaying(false);
@@ -274,8 +355,12 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
 
   const toggleMute = () => {
     if (videoRef.current) {
-      videoRef.current.muted = !videoRef.current.muted;
-      setIsMuted(videoRef.current.muted);
+      const newMuted = !videoRef.current.muted;
+      videoRef.current.muted = newMuted;
+      setIsMuted(newMuted);
+      if (!newMuted) {
+        setNeedsUnmutePrompt(false);
+      }
     }
   };
 
@@ -284,7 +369,11 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
     setVolume(value);
     if (videoRef.current) {
       videoRef.current.volume = value;
-      setIsMuted(value === 0);
+      const newMuted = value === 0;
+      setIsMuted(newMuted);
+      if (!newMuted) {
+        setNeedsUnmutePrompt(false);
+      }
     }
   };
 
@@ -352,6 +441,34 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
         className="w-full h-full object-contain"
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
+        onWaiting={() => {
+          if (hasBufferedFragmentRef.current && !stallTimeoutRef.current && hlsRef.current) {
+            stallTimeoutRef.current = setTimeout(() => {
+              if (hlsRef.current) {
+                hlsRef.current.startLoad();
+              }
+              stallTimeoutRef.current = null;
+            }, 8000);
+          }
+        }}
+        onPlaying={() => {
+          if (stallTimeoutRef.current) {
+            clearTimeout(stallTimeoutRef.current as number);
+            stallTimeoutRef.current = null;
+          }
+        }}
+        onTimeUpdate={() => {
+          if (videoRef.current) {
+            const currentTime = videoRef.current.currentTime;
+            if (currentTime > lastCurrentTimeRef.current) {
+              if (stallTimeoutRef.current) {
+                clearTimeout(stallTimeoutRef.current as number);
+                stallTimeoutRef.current = null;
+              }
+            }
+            lastCurrentTimeRef.current = currentTime;
+          }
+        }}
         playsInline
         {...{ 'x-webkit-airplay': 'allow' }}
       />
@@ -360,6 +477,26 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
       {isLoading && !error && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-10">
           <Loader2 className="w-12 h-12 text-brand-secondary animate-spin" />
+        </div>
+      )}
+
+      {/* Unmute Overlay */}
+      {needsUnmutePrompt && !error && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30">
+          <button
+            onClick={() => {
+              if (videoRef.current) {
+                videoRef.current.muted = false;
+                setIsMuted(false);
+                setVolume(1);
+                setNeedsUnmutePrompt(false);
+              }
+            }}
+            className="flex items-center gap-2 bg-black/80 hover:bg-black text-white px-4 py-2 rounded-full backdrop-blur-md border border-white/20 shadow-xl transition-all"
+          >
+            <VolumeX className="w-4 h-4" />
+            <span className="text-xs font-bold uppercase tracking-wider">Activer le son</span>
+          </button>
         </div>
       )}
 
@@ -379,7 +516,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
             <div className="flex items-center gap-4">
               <button 
                 onClick={togglePlay}
-                className="p-2 flex items-center justify-center min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 hover:bg-white/20 rounded-full transition-colors text-white"
+                className="p-2 flex items-center justify-center min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 hover:bg-white/20 rounded-full transition-colors text-foreground"
                 aria-label={isPlaying ? "Mettre en pause" : "Lire"}
               >
                 {isPlaying ? <Pause className="fill-current w-6 h-6" /> : <Play className="fill-current w-6 h-6" />}
@@ -388,7 +525,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
               <div className="hidden sm:flex items-center gap-2">
                 <button 
                   onClick={toggleMute}
-                  className="p-2 flex items-center justify-center min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 hover:bg-white/20 rounded-full transition-colors text-white"
+                  className="p-2 flex items-center justify-center min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 hover:bg-white/20 rounded-full transition-colors text-foreground"
                   aria-label={isMuted || volume === 0 ? "Activer le son" : "Couper le son"}
                 >
                   {isMuted || volume === 0 ? <VolumeX className="w-6 h-6" /> : <Volume2 className="w-6 h-6" />}
@@ -404,7 +541,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                 />
               </div>
 
-              <div className="text-white text-sm font-medium ml-2 drop-shadow-md">
+              <div className="text-foreground text-sm font-medium ml-2 drop-shadow-md">
                 {name}
               </div>
             </div>
@@ -415,7 +552,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                 <div className="relative">
                   <button 
                     onClick={() => setIsQualityOpen(!isQualityOpen)}
-                    className="flex items-center justify-center gap-1.5 px-3 py-1.5 min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 hover:bg-white/20 rounded-lg transition-colors text-white text-[0.625rem] font-black uppercase tracking-widest border border-white/20"
+                    className="flex items-center justify-center gap-1.5 px-3 py-1.5 min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 hover:bg-white/20 rounded-lg transition-colors text-foreground text-[0.625rem] font-black uppercase tracking-widest border border-white/20"
                     aria-label="Paramètres de qualité"
                   >
                     <Settings className={`w-3.5 h-3.5 ${isQualityOpen ? 'animate-spin-slow' : ''}`} />
@@ -437,7 +574,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                         <div className="max-h-48 overflow-y-auto custom-scrollbar">
                           <button
                             onClick={() => changeQuality(-1)}
-                            className={`w-full px-4 py-2 text-left text-[0.6875rem] font-bold transition-colors ${currentLevel === -1 ? 'bg-brand-primary text-white' : 'text-foreground hover:bg-zinc-800'}`}
+                            className={`w-full px-4 py-2 text-left text-[0.6875rem] font-bold transition-colors ${currentLevel === -1 ? 'bg-brand-primary text-foreground' : 'text-foreground hover:bg-zinc-800'}`}
                           >
                             AUTO
                           </button>
@@ -445,7 +582,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                             <button
                               key={level.index}
                               onClick={() => changeQuality(level.index)}
-                              className={`w-full px-4 py-2 text-left text-[0.6875rem] font-bold transition-colors ${currentLevel === level.index ? 'bg-brand-primary text-white' : 'text-foreground hover:bg-zinc-800'}`}
+                              className={`w-full px-4 py-2 text-left text-[0.6875rem] font-bold transition-colors ${currentLevel === level.index ? 'bg-brand-primary text-foreground' : 'text-foreground hover:bg-zinc-800'}`}
                             >
                               {level.height}P
                             </button>
@@ -460,7 +597,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
               {isPipAvailable && (
                 <button 
                   onClick={togglePip}
-                  className="p-2 flex items-center justify-center min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 hover:bg-white/20 rounded-full transition-colors text-white"
+                  className="p-2 flex items-center justify-center min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 hover:bg-white/20 rounded-full transition-colors text-foreground"
                   title="Miniature (PiP)"
                   aria-label="Afficher en mode miniature (PiP)"
                 >
@@ -471,7 +608,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
               {isCastAvailable && (
                 <button 
                   onClick={toggleCast}
-                  className={`p-2 flex items-center justify-center min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 hover:bg-white/20 rounded-full transition-colors ${castState === 'connected' ? 'text-brand-primary' : 'text-white'}`}
+                  className={`p-2 flex items-center justify-center min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 hover:bg-white/20 rounded-full transition-colors ${castState === 'connected' ? 'text-brand-primary' : 'text-foreground'}`}
                   title="Diffuser"
                   aria-label="Diffuser sur un autre appareil"
                 >
@@ -483,7 +620,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                 <div className="relative">
                   <button
                     onClick={() => setShowTracksMenu(!showTracksMenu)}
-                    className={`p-2 min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 flex items-center justify-center rounded-lg transition-all hover:bg-white/10 ${showTracksMenu ? 'text-white bg-white/10' : 'text-zinc-400'}`}
+                    className={`p-2 min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 flex items-center justify-center rounded-lg transition-all hover:bg-white/10 ${showTracksMenu ? 'text-foreground bg-white/10' : 'text-zinc-400'}`}
                     title="Pistes audio / Sous-titres"
                     aria-label="Pistes audio et sous-titres"
                   >
@@ -510,7 +647,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                                 <button
                                   key={track.id}
                                   onClick={() => handleAudioChange(track.id)}
-                                  className={`flex items-center justify-between w-full px-3 py-2.5 rounded-xl text-sm font-bold transition-colors ${activeAudio === track.id ? 'bg-white/10 text-white' : 'text-zinc-400 hover:bg-white/5 hover:text-white'}`}
+                                  className={`flex items-center justify-between w-full px-3 py-2.5 rounded-xl text-sm font-bold transition-colors ${activeAudio === track.id ? 'bg-white/10 text-foreground' : 'text-zinc-400 hover:bg-white/5 hover:text-foreground'}`}
                                 >
                                   <span className="flex items-center gap-2">
                                     <Volume2 size={14} />
@@ -522,7 +659,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                                     </span>
                                   )}
                                   {activeAudio === track.id && (
-                                    <Check size={14} className="text-white ml-1" />
+                                    <Check size={14} className="text-foreground ml-1" />
                                   )}
                                 </button>
                               ))}
@@ -543,14 +680,14 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                               
                               <button
                                 onClick={() => handleSubtitleChange(-1)}
-                                className={`flex items-center justify-between w-full px-3 py-2.5 rounded-xl text-sm font-bold transition-colors ${activeSubtitle === -1 ? 'bg-white/10 text-white' : 'text-zinc-400 hover:bg-white/5 hover:text-white'}`}
+                                className={`flex items-center justify-between w-full px-3 py-2.5 rounded-xl text-sm font-bold transition-colors ${activeSubtitle === -1 ? 'bg-white/10 text-foreground' : 'text-zinc-400 hover:bg-white/5 hover:text-foreground'}`}
                               >
                                 <span className="flex items-center gap-2">
                                   <CaptionsOff size={14} />
                                   Désactivé
                                 </span>
                                 {activeSubtitle === -1 && (
-                                  <Check size={14} className="text-white" />
+                                  <Check size={14} className="text-foreground" />
                                 )}
                               </button>
                               
@@ -558,7 +695,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                                 <button
                                   key={track.id}
                                   onClick={() => handleSubtitleChange(track.id)}
-                                  className={`flex items-center justify-between w-full px-3 py-2.5 rounded-xl text-sm font-bold transition-colors ${activeSubtitle === track.id ? 'bg-white/10 text-white' : 'text-zinc-400 hover:bg-white/5 hover:text-white'}`}
+                                  className={`flex items-center justify-between w-full px-3 py-2.5 rounded-xl text-sm font-bold transition-colors ${activeSubtitle === track.id ? 'bg-white/10 text-foreground' : 'text-zinc-400 hover:bg-white/5 hover:text-foreground'}`}
                                 >
                                   <span className="flex items-center gap-2">
                                     <Captions size={14} />
@@ -571,7 +708,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                                       </span>
                                     )}
                                     {activeSubtitle === track.id && (
-                                      <Check size={14} className="text-white" />
+                                      <Check size={14} className="text-foreground" />
                                     )}
                                   </span>
                                 </button>
@@ -588,7 +725,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
               <div className="relative">
                 <button
                   onClick={() => setShowSleepMenu(!showSleepMenu)}
-                  className={`p-2 min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 flex items-center justify-center rounded-lg transition-all hover:bg-white/10 ${sleepTimerActive ? 'text-white' : 'text-zinc-400'}`}
+                  className={`p-2 min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 flex items-center justify-center rounded-lg transition-all hover:bg-white/10 ${sleepTimerActive ? 'text-foreground' : 'text-zinc-400'}`}
                   title="Sleep Timer"
                   aria-label="Minuteur de mise en veille"
                 >
@@ -615,7 +752,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                               onStartSleepTimer?.(min);
                               setShowSleepMenu(false);
                             }}
-                            className="flex items-center justify-between w-full px-3 py-2.5 rounded-xl text-sm font-bold text-zinc-300 hover:bg-white/10 hover:text-white transition-colors"
+                            className="flex items-center justify-between w-full px-3 py-2.5 rounded-xl text-sm font-bold text-zinc-300 hover:bg-white/10 hover:text-foreground transition-colors"
                           >
                             <span>{min} min</span>
                             <span className="text-[0.625rem] text-zinc-600">
@@ -631,7 +768,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
 
               <button 
                 onClick={toggleFullscreen}
-                className="p-2 flex items-center justify-center min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 hover:bg-white/20 rounded-full transition-colors text-white"
+                className="p-2 flex items-center justify-center min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 hover:bg-white/20 rounded-full transition-colors text-foreground"
                 aria-label="Basculer le plein écran"
               >
                 <Maximize className="w-6 h-6" />

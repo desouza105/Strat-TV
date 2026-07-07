@@ -1,0 +1,111 @@
+--- src/App.tsx
++++ src/App.tsx
+@@ -45,6 +45,8 @@
+   const [sleepTimerRemaining, setSleepTimerRemaining] = useState<number>(0);
+   const sleepTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
++  const loadRequestIdRef = useRef(0);
++  const abortControllerRef = useRef<AbortController | null>(null);
+ 
+   // Enregistrer les statistiques lorsqu'on change de chaîne
+   const recordStats = useCallback(() => {
+@@ -237,7 +239,7 @@
+     return PORTAL_SOURCES.find(s => s.url === currentPlaylistUrl)?.name || '';
+   }, [currentPlaylistUrl]);
+ 
+-  const checkChannelsHealth = useCallback(async (channelList: IPTVChannel[]) => {
++  const checkChannelsHealth = useCallback(async (channelList: IPTVChannel[], requestId: number) => {
+     // Initialize all as checking
+     const initialStatus: Record<string, 'checking' | 'active' | 'dead'> = {};
+     channelList.forEach(c => {
+@@ -248,6 +250,8 @@
+     // Check in chunks to not overload the API or browser
+     const chunkSize = 20;
+     for (let i = 0; i < channelList.length; i += chunkSize) {
++      if (requestId !== loadRequestIdRef.current) return;
++
+       const chunk = channelList.slice(i, i + chunkSize);
+       const urls = chunk.map(c => c.url);
+ 
+@@ -258,8 +262,11 @@
+           body: JSON.stringify({ urls })
+         });
+ 
++        if (requestId !== loadRequestIdRef.current) return;
++
+         if (response.ok) {
+           const results = await response.json();
++          if (requestId !== loadRequestIdRef.current) return;
+           setChannelStatus(prev => {
+             const next = { ...prev };
+             Object.keys(results).forEach(url => {
+@@ -277,6 +284,7 @@
+           });
+         }
+       } catch (err) {
++        if (requestId !== loadRequestIdRef.current) return;
+         console.error('Failed to check health for chunk', err);
+         // Fallback to active on network error (likely API missing)
+         setChannelStatus(prev => {
+@@ -291,24 +299,32 @@
+   }, []);
+ 
+   const loadPlaylist = useCallback(async (url: string) => {
++    loadRequestIdRef.current += 1;
++    const requestId = loadRequestIdRef.current;
++
++    if (abortControllerRef.current) {
++      abortControllerRef.current.abort();
++    }
++    const abortController = new AbortController();
++    abortControllerRef.current = abortController;
++
+     setIsLoading(true);
+     setError(null);
+     setCurrentPlaylistUrl(url);
+     setChannelStatus({}); // Reset status
+     try {
+       let response;
+       if (url.startsWith('blob:')) {
+-        response = await fetch(url);
++        response = await fetch(url, { signal: abortController.signal });
+         if (!response.ok) throw new Error('Impossible de lire le fichier local');
+       } else {
+         // Use our internal proxy to avoid CORS issues for remote URLs
+         const proxyUrl = `/api/proxy?url=${encodeURIComponent(url)}`;
+-        response = await fetch(proxyUrl);
++        response = await fetch(proxyUrl, { signal: abortController.signal });
+         
+         if (!response.ok) {
+           // Fallback to direct fetch if proxy fails for some reason
+-          response = await fetch(url);
++          response = await fetch(url, { signal: abortController.signal });
+           if (!response.ok) throw new Error('Impossible de charger la playlist IPTV');
+         }
+       }
+@@ -319,19 +335,24 @@
+         throw new Error('Aucune chaîne valide trouvée dans la playlist');
+       }
+       
++      if (requestId !== loadRequestIdRef.current) return;
++
+       setChannels(parsedChannels);
+       setSelectedChannel(parsedChannels[0]);
+ 
+       // Start health check in background
+-      checkChannelsHealth(parsedChannels);
++      checkChannelsHealth(parsedChannels, requestId);
+     } catch (err: any) {
++      if (err.name === 'AbortError' || requestId !== loadRequestIdRef.current) return;
+       console.error(err);
+       setError(
+         err.message.includes('Failed to fetch') 
+           ? 'Erreur CORS : La playlist est inaccessible car le domaine source bloque les requêtes externes. Essayez une URL avec CORS activé.'
+           : err.message
+       );
+     } finally {
+-      setIsLoading(false);
++      if (requestId === loadRequestIdRef.current) {
++        setIsLoading(false);
++      }
+     }
+   }, [checkChannelsHealth]);

@@ -5,7 +5,8 @@
 
 import React, { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { Download, ChevronDown, Globe, Film, MapPin, Search, LayoutGrid, Radio, Grid2x2, Flame, Lock, ShieldCheck, Tv, AlertCircle, Plus, Trash2, Link, FileUp, X as XIcon, BarChart2, Contrast } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Download, ChevronDown, Globe, Film, MapPin, Search, LayoutGrid, Radio, Grid2x2, Flame, Lock, ShieldCheck, Tv, AlertCircle, Plus, Trash2, Link, FileUp, X as XIcon, BarChart2, Contrast, Menu, Play } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { PORTAL_SOURCES, PlaylistSource, getCustomPlaylists, saveCustomPlaylist, deleteCustomPlaylist } from '../constants/portal_data';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -24,6 +25,10 @@ interface HeaderProps {
 }
 
 export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName, isSplitView, onToggleSplitView, onOpenStats }: HeaderProps) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const isFilmsView = location.pathname.startsWith('/films');
+
   const isMobileLandscape = useMediaQuery('(orientation: landscape) and (max-height: 500px)');
   
   const africaUrl = 'https://tvradiozap.eu/live/d/tvzaf.m3u';
@@ -183,91 +188,117 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
           </div>
 
           <div className="hidden lg:flex items-center gap-1 xl:gap-2">
-            {/* Country Selector Button */}
-            <div className="relative">
-              <Button
-                variant={isPortalOpen ? "secondary" : "ghost"}
-                onClick={() => setIsPortalOpen(!isPortalOpen)}
-                className="flex items-center gap-1.5 xl:gap-2 rounded-xl text-[0.625rem] xl:text-xs px-2 xl:px-4 h-8 xl:h-10"
+            {/* Mode Switcher */}
+            <div className="flex items-center bg-black/40 backdrop-blur-md rounded-xl p-1 mr-2 border border-border">
+              <button
+                onClick={() => navigate('/')}
+                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-2 ${
+                  !isFilmsView ? 'bg-white text-black shadow-sm' : 'text-zinc-400 hover:text-foreground'
+                }`}
               >
-                <MapPin size={14} className="text-muted-foreground" />
-                COUNTRY
-                <ChevronDown className={`w-3 h-3 text-muted-foreground transition-transform ${isPortalOpen ? 'rotate-180' : ''}`} />
-              </Button>
+                <Tv size={14} className={!isFilmsView ? 'text-black' : 'text-zinc-400'} />
+                TV EN DIRECT
+              </button>
+              <button
+                onClick={() => navigate('/films')}
+                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-2 ${
+                  isFilmsView ? 'bg-white text-black shadow-sm' : 'text-zinc-400 hover:text-foreground'
+                }`}
+              >
+                <Film size={14} className={isFilmsView ? 'text-black' : 'text-zinc-400'} />
+                FILMS & SÉRIES
+              </button>
             </div>
 
-            <Button
-              variant={isAfricaActive ? "secondary" : "ghost"}
-              onClick={() => onLoadPlaylist(africaUrl)}
-              disabled={isLoading}
-              className="flex items-center gap-1.5 xl:gap-2 rounded-xl text-[0.625rem] xl:text-xs px-2 xl:px-4 h-8 xl:h-10 font-bold"
-            >
-              <Globe size={14} className={isAfricaActive ? 'text-foreground' : 'text-muted-foreground'} />
-              AFRICA
-              {isLoading && isAfricaActive && <div className="w-3 h-3 border-2 border-foreground border-t-transparent rounded-full animate-spin ml-1" />}
-            </Button>
+            {!isFilmsView && (
+              <>
+                {/* Country Selector Button */}
+                <div className="relative">
+                  <Button
+                    variant={isPortalOpen ? "secondary" : "ghost"}
+                    onClick={() => setIsPortalOpen(!isPortalOpen)}
+                    className="flex items-center gap-1.5 xl:gap-2 rounded-xl text-[0.625rem] xl:text-xs px-2 xl:px-4 h-8 xl:h-10"
+                  >
+                    <MapPin size={14} className="text-muted-foreground" />
+                    COUNTRY
+                    <ChevronDown className={`w-3 h-3 text-muted-foreground transition-transform ${isPortalOpen ? 'rotate-180' : ''}`} />
+                  </Button>
+                </div>
 
-            <Button
-              variant={isEuropaActive ? "secondary" : "ghost"}
-              onClick={() => onLoadPlaylist(europaUrl)}
-              disabled={isLoading}
-              className="flex items-center gap-1.5 xl:gap-2 rounded-xl text-[0.625rem] xl:text-xs px-2 xl:px-4 h-8 xl:h-10 font-bold"
-            >
-              <MapPin size={14} className={isEuropaActive ? 'text-foreground' : 'text-muted-foreground'} />
-              EUROPA
-              {isLoading && isEuropaActive && <div className="w-3 h-3 border-2 border-foreground border-t-transparent rounded-full animate-spin ml-1" />}
-            </Button>
+                <Button
+                  variant={isAfricaActive ? "secondary" : "ghost"}
+                  onClick={() => onLoadPlaylist(africaUrl)}
+                  disabled={isLoading}
+                  className="flex items-center gap-1.5 xl:gap-2 rounded-xl text-[0.625rem] xl:text-xs px-2 xl:px-4 h-8 xl:h-10 font-bold"
+                >
+                  <Globe size={14} className={isAfricaActive ? 'text-foreground' : 'text-muted-foreground'} />
+                  AFRICA
+                  {isLoading && isAfricaActive && <div className="w-3 h-3 border-2 border-foreground border-t-transparent rounded-full animate-spin ml-1" />}
+                </Button>
 
-            <Button
-              variant={isWorldActive ? "secondary" : "ghost"}
-              onClick={() => onLoadPlaylist(worldUrl)}
-              disabled={isLoading}
-              className="flex items-center gap-1.5 xl:gap-2 rounded-xl text-[0.625rem] xl:text-xs px-2 xl:px-4 h-8 xl:h-10 font-bold"
-            >
-              <Search size={14} className={isWorldActive ? 'text-foreground' : 'text-muted-foreground'} />
-              WORLD
-              {isLoading && isWorldActive && <div className="w-3 h-3 border-2 border-foreground border-t-transparent rounded-full animate-spin ml-1" />}
-            </Button>
+                <Button
+                  variant={isEuropaActive ? "secondary" : "ghost"}
+                  onClick={() => onLoadPlaylist(europaUrl)}
+                  disabled={isLoading}
+                  className="flex items-center gap-1.5 xl:gap-2 rounded-xl text-[0.625rem] xl:text-xs px-2 xl:px-4 h-8 xl:h-10 font-bold"
+                >
+                  <MapPin size={14} className={isEuropaActive ? 'text-foreground' : 'text-muted-foreground'} />
+                  EUROPA
+                  {isLoading && isEuropaActive && <div className="w-3 h-3 border-2 border-foreground border-t-transparent rounded-full animate-spin ml-1" />}
+                </Button>
 
-            <Button
-              variant={isRegionalActive ? "secondary" : "ghost"}
-              onClick={() => onLoadPlaylist(regionalUrl)}
-              disabled={isLoading}
-              className="flex items-center gap-1.5 xl:gap-2 rounded-xl text-[0.625rem] xl:text-xs px-2 xl:px-4 h-8 xl:h-10 font-bold"
-            >
-              <LayoutGrid size={14} className={isRegionalActive ? 'text-foreground' : 'text-muted-foreground'} />
-              REGIONAL
-              {isLoading && isRegionalActive && <div className="w-3 h-3 border-2 border-foreground border-t-transparent rounded-full animate-spin ml-1" />}
-            </Button>
+                <Button
+                  variant={isWorldActive ? "secondary" : "ghost"}
+                  onClick={() => onLoadPlaylist(worldUrl)}
+                  disabled={isLoading}
+                  className="flex items-center gap-1.5 xl:gap-2 rounded-xl text-[0.625rem] xl:text-xs px-2 xl:px-4 h-8 xl:h-10 font-bold"
+                >
+                  <Search size={14} className={isWorldActive ? 'text-foreground' : 'text-muted-foreground'} />
+                  WORLD
+                  {isLoading && isWorldActive && <div className="w-3 h-3 border-2 border-foreground border-t-transparent rounded-full animate-spin ml-1" />}
+                </Button>
 
-            <Button
-              variant={isAdultActive ? "destructive" : "ghost"}
-              onClick={handleAdultClick}
-              disabled={isLoading}
-              className={`flex items-center gap-1.5 xl:gap-2 rounded-xl text-[0.625rem] xl:text-xs px-2 xl:px-4 h-8 xl:h-10 font-bold ${!isAdultActive && 'hover:text-destructive hover:bg-destructive/10'}`}
-            >
-              <Flame size={14} />
-              XXX ADULT
-              {isLoading && isAdultActive && <div className="w-3 h-3 border-2 border-foreground border-t-transparent rounded-full animate-spin ml-1" />}
-            </Button>
+                <Button
+                  variant={isRegionalActive ? "secondary" : "ghost"}
+                  onClick={() => onLoadPlaylist(regionalUrl)}
+                  disabled={isLoading}
+                  className="flex items-center gap-1.5 xl:gap-2 rounded-xl text-[0.625rem] xl:text-xs px-2 xl:px-4 h-8 xl:h-10 font-bold"
+                >
+                  <LayoutGrid size={14} className={isRegionalActive ? 'text-foreground' : 'text-muted-foreground'} />
+                  REGIONAL
+                  {isLoading && isRegionalActive && <div className="w-3 h-3 border-2 border-foreground border-t-transparent rounded-full animate-spin ml-1" />}
+                </Button>
 
-            <Button
-              variant="ghost"
-              onClick={() => setIsCanalOpen(true)}
-              disabled={isLoading}
-              className="flex items-center gap-1.5 xl:gap-2 rounded-xl text-[0.625rem] xl:text-xs px-2 xl:px-4 h-8 xl:h-10 font-bold"
-            >
-              <Tv size={14} className="text-muted-foreground" />
-              CANAL+
-            </Button>
+                <Button
+                  variant={isAdultActive ? "destructive" : "ghost"}
+                  onClick={handleAdultClick}
+                  disabled={isLoading}
+                  className={`flex items-center gap-1.5 xl:gap-2 rounded-xl text-[0.625rem] xl:text-xs px-2 xl:px-4 h-8 xl:h-10 font-bold ${!isAdultActive && 'hover:text-destructive hover:bg-destructive/10'}`}
+                >
+                  <Flame size={14} />
+                  XXX ADULT
+                  {isLoading && isAdultActive && <div className="w-3 h-3 border-2 border-foreground border-t-transparent rounded-full animate-spin ml-1" />}
+                </Button>
 
-            <Button
-              variant="ghost"
-              onClick={() => setIsImportOpen(true)}
-              className="flex items-center gap-1.5 xl:gap-2 rounded-xl text-[0.625rem] xl:text-xs px-2 xl:px-4 h-8 xl:h-10 font-bold"
-            >
-              <Plus size={14} className="text-muted-foreground" /> IMPORT
-            </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => setIsCanalOpen(true)}
+                  disabled={isLoading}
+                  className="flex items-center gap-1.5 xl:gap-2 rounded-xl text-[0.625rem] xl:text-xs px-2 xl:px-4 h-8 xl:h-10 font-bold"
+                >
+                  <Tv size={14} className="text-muted-foreground" />
+                  CANAL+
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  onClick={() => setIsImportOpen(true)}
+                  className="flex items-center gap-1.5 xl:gap-2 rounded-xl text-[0.625rem] xl:text-xs px-2 xl:px-4 h-8 xl:h-10 font-bold"
+                >
+                  <Plus size={14} className="text-muted-foreground" /> IMPORT
+                </Button>
+              </>
+            )}
           </div>
         </div>
 
@@ -277,97 +308,103 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
             <button
               onClick={() => setIsHighContrast(!isHighContrast)}
               className={`flex-shrink-0 p-2 rounded-lg transition-all active:scale-95 ${
-                isHighContrast ? 'bg-card text-white' : 'bg-card text-muted-foreground'
+                isHighContrast ? 'bg-card text-foreground' : 'bg-card text-muted-foreground'
               }`}
               title="Mode Contraste Élevé"
             >
               <Contrast size={18} />
             </button>
-            <button
-              onClick={onToggleSplitView}
-              className={`flex-shrink-0 p-2 rounded-lg transition-all active:scale-95 ${
-                isSplitView ? 'bg-card text-white' : 'bg-card text-muted-foreground'
-              }`}
-              title="Mode Multi-écran"
-            >
-              <Grid2x2 size={18} />
-            </button>
+            {!isFilmsView && (
+              <button
+                onClick={onToggleSplitView}
+                className={`flex-shrink-0 p-2 rounded-lg transition-all active:scale-95 ${
+                  isSplitView ? 'bg-card text-foreground' : 'bg-card text-muted-foreground'
+                }`}
+                title="Mode Multi-écran"
+              >
+                <Grid2x2 size={18} />
+              </button>
+            )}
             <button
               onClick={() => setIsPortalOpen(!isPortalOpen)}
               className={`flex-shrink-0 p-2 rounded-lg transition-all active:scale-95 ${
-                isPortalOpen ? 'bg-card text-white' : 'bg-card text-muted-foreground'
+                isPortalOpen ? 'bg-card text-foreground' : 'bg-card text-muted-foreground'
               }`}
             >
-              <MapPin size={18} />
+              <Menu size={18} />
             </button>
-            <button
-              onClick={() => onLoadPlaylist(africaUrl)}
-              disabled={isLoading}
-              className={`flex-shrink-0 p-2 rounded-lg transition-all active:scale-95 ${
-                isAfricaActive 
-                  ? 'bg-white/10 text-white' 
-                  : 'bg-zinc-900 text-zinc-500'
-              }`}
-            >
-              <Globe size={18} />
-            </button>
-            <button
-              onClick={() => onLoadPlaylist(europaUrl)}
-              disabled={isLoading}
-              className={`flex-shrink-0 p-2 rounded-lg transition-all active:scale-95 ${
-                isEuropaActive 
-                  ? 'bg-white/10 text-white' 
-                  : 'bg-zinc-900 text-zinc-500'
-              }`}
-            >
-              <MapPin size={18} />
-            </button>
-            <button
-              onClick={() => onLoadPlaylist(worldUrl)}
-              disabled={isLoading}
-              className={`flex-shrink-0 p-2 rounded-lg transition-all active:scale-95 ${
-                isWorldActive 
-                  ? 'bg-white/10 text-white' 
-                  : 'bg-zinc-900 text-zinc-500'
-              }`}
-            >
-              <Search size={18} />
-            </button>
-            <button
-              onClick={() => onLoadPlaylist(regionalUrl)}
-              disabled={isLoading}
-              className={`flex-shrink-0 p-2 rounded-lg transition-all active:scale-95 ${
-                isRegionalActive 
-                  ? 'bg-white/10 text-white' 
-                  : 'bg-zinc-900 text-zinc-500'
-              }`}
-            >
-              <LayoutGrid size={18} />
-            </button>
-            <button
-              onClick={handleAdultClick}
-              disabled={isLoading}
-              className={`flex-shrink-0 p-2 rounded-lg transition-all active:scale-95 ${
-                isAdultActive 
-                  ? 'bg-white/10 text-white' 
-                  : 'bg-zinc-900 text-zinc-500'
-              }`}
-            >
-              <Flame size={18} />
-            </button>
-            <button
-              onClick={() => setIsCanalOpen(true)}
-              disabled={isLoading}
-              className="flex-shrink-0 p-2 rounded-lg transition-all active:scale-95 bg-zinc-900 text-zinc-500"
-            >
-              <Tv size={18} />
-            </button>
-            <button
-              onClick={() => setIsImportOpen(true)}
-              className="flex-shrink-0 p-2 rounded-lg transition-all active:scale-95 bg-zinc-900 border-zinc-800 text-zinc-500 border"
-            >
-              <Plus size={18} />
-            </button>
+            {!isFilmsView && (
+              <>
+                <button
+                  onClick={() => onLoadPlaylist(africaUrl)}
+                  disabled={isLoading}
+                  className={`flex-shrink-0 p-2 rounded-lg transition-all active:scale-95 ${
+                    isAfricaActive 
+                      ? 'bg-white/10 text-foreground' 
+                      : 'bg-zinc-900 text-zinc-500'
+                  }`}
+                >
+                  <Globe size={18} />
+                </button>
+                <button
+                  onClick={() => onLoadPlaylist(europaUrl)}
+                  disabled={isLoading}
+                  className={`flex-shrink-0 p-2 rounded-lg transition-all active:scale-95 ${
+                    isEuropaActive 
+                      ? 'bg-white/10 text-foreground' 
+                      : 'bg-zinc-900 text-zinc-500'
+                  }`}
+                >
+                  <MapPin size={18} />
+                </button>
+                <button
+                  onClick={() => onLoadPlaylist(worldUrl)}
+                  disabled={isLoading}
+                  className={`flex-shrink-0 p-2 rounded-lg transition-all active:scale-95 ${
+                    isWorldActive 
+                      ? 'bg-white/10 text-foreground' 
+                      : 'bg-zinc-900 text-zinc-500'
+                  }`}
+                >
+                  <Search size={18} />
+                </button>
+                <button
+                  onClick={() => onLoadPlaylist(regionalUrl)}
+                  disabled={isLoading}
+                  className={`flex-shrink-0 p-2 rounded-lg transition-all active:scale-95 ${
+                    isRegionalActive 
+                      ? 'bg-white/10 text-foreground' 
+                      : 'bg-zinc-900 text-zinc-500'
+                  }`}
+                >
+                  <LayoutGrid size={18} />
+                </button>
+                <button
+                  onClick={handleAdultClick}
+                  disabled={isLoading}
+                  className={`flex-shrink-0 p-2 rounded-lg transition-all active:scale-95 ${
+                    isAdultActive 
+                      ? 'bg-white/10 text-foreground' 
+                      : 'bg-zinc-900 text-zinc-500'
+                  }`}
+                >
+                  <Flame size={18} />
+                </button>
+                <button
+                  onClick={() => setIsCanalOpen(true)}
+                  disabled={isLoading}
+                  className="flex-shrink-0 p-2 rounded-lg transition-all active:scale-95 bg-zinc-900 text-zinc-500"
+                >
+                  <Tv size={18} />
+                </button>
+                <button
+                  onClick={() => setIsImportOpen(true)}
+                  className="flex-shrink-0 p-2 rounded-lg transition-all active:scale-95 bg-zinc-900 border-zinc-800 text-zinc-500 border"
+                >
+                  <Plus size={18} />
+                </button>
+              </>
+            )}
           </div>
 
           <div className="hidden lg:flex items-center gap-4">
@@ -375,28 +412,32 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
               onClick={() => setIsHighContrast(!isHighContrast)}
               className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all text-xs font-bold uppercase tracking-wider ${
                 isHighContrast 
-                  ? 'bg-white/10 text-white' 
-                  : 'bg-zinc-900 text-zinc-400 hover:text-white'
+                  ? 'bg-white/10 text-foreground' 
+                  : 'bg-zinc-900 text-zinc-400 hover:text-foreground'
               }`}
               title="Mode Contraste Élevé"
             >
               <Contrast size={14} />
             </button>
-            <button
-              onClick={onToggleSplitView}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all text-xs font-bold uppercase tracking-wider ${
-                isSplitView 
-                  ? 'bg-white/10 text-white' 
-                  : 'bg-zinc-900 text-zinc-400 hover:text-white'
-              }`}
-            >
-              <Grid2x2 size={14} /> {isSplitView ? 'QUITTER MULTI' : 'MULTI-ÉCRAN'}
-            </button>
+            {!isFilmsView && (
+              <>
+                <button
+                  onClick={onToggleSplitView}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all text-xs font-bold uppercase tracking-wider ${
+                    isSplitView 
+                      ? 'bg-white/10 text-foreground' 
+                      : 'bg-zinc-900 text-zinc-400 hover:text-foreground'
+                  }`}
+                >
+                  <Grid2x2 size={14} /> {isSplitView ? 'QUITTER MULTI' : 'MULTI-ÉCRAN'}
+                </button>
 
-            <span className="flex items-center gap-2 text-[0.625rem] font-black text-white uppercase tracking-[0.2em]">
-              <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-              SYSTEM LIVE
-            </span>
+                <span className="flex items-center gap-2 text-[0.625rem] font-black text-foreground uppercase tracking-[0.2em]">
+                  <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                  SYSTEM LIVE
+                </span>
+              </>
+            )}
           </div>
         </div>
 
@@ -405,84 +446,112 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
             <div className="fixed inset-0 z-40" onClick={() => setIsPortalOpen(false)} />
             <div className="absolute top-full left-4 lg:left-[180px] w-[calc(100vw-2rem)] md:w-72 max-h-[80vh] bg-card border border-border rounded-2xl shadow-2xl overflow-hidden flex flex-col z-50 animate-in fade-in zoom-in-95 slide-in-from-top-4 duration-200 origin-top">
               <div className="p-3 border-b border-border">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-3 h-3" />
-                  <input
-                    autoFocus
-                    type="text"
-                    placeholder={`Chercher ${portalTab === 'Country' ? 'pays' : 'genre'}...`}
-                    aria-label={`Chercher ${portalTab === 'Country' ? 'pays' : 'genre'}`}
-                    className="w-full bg-background border-none rounded-lg py-2 pl-9 pr-4 text-xs text-foreground focus:ring-2 focus:ring-white/50 outline-none"
-                    value={portalSearch}
-                    onChange={(e) => setPortalSearch(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div className="p-1 bg-background flex gap-1 mx-1 mt-1 rounded-lg">
-                <button
-                  onClick={() => { setPortalTab('Country'); setPortalSearch(''); }}
-                  className={`flex-1 py-1.5 rounded-lg text-[0.625rem] font-black tracking-widest transition-colors ${portalTab === 'Country' ? 'bg-card text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-                >
-                  PAYS
-                </button>
-                <button
-                  onClick={() => { setPortalTab('Genre'); setPortalSearch(''); }}
-                  className={`flex-1 py-1.5 rounded-lg text-[0.625rem] font-black tracking-widest transition-colors ${portalTab === 'Genre' ? 'bg-card text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-                >
-                  GENRES
-                </button>
-              </div>
-
-              <div className="flex-1 overflow-y-auto p-2 custom-scrollbar grid grid-cols-1 gap-1">
-                {filteredPortals.map((source) => (
+                {/* Mobile Mode Switcher */}
+                <div className="flex items-center bg-black/40 rounded-xl p-1 mb-3 border border-border">
                   <button
-                    key={source.url}
-                    onClick={() => handlePortalSelect(source)}
-                    className="flex items-center gap-3 p-2 rounded-xl hover:bg-background transition-all text-left group"
+                    onClick={() => { navigate('/'); setIsPortalOpen(false); }}
+                    className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${
+                      !isFilmsView ? 'bg-white text-black shadow-sm' : 'text-zinc-400 hover:text-foreground'
+                    }`}
                   >
-                    <div className="w-8 h-8 flex-shrink-0 flex items-center justify-center overflow-hidden transition-colors">
-                      {source.code ? (
-                        <img 
-                          src={`https://flagcdn.com/w40/${source.code}.png`} 
-                          alt={source.name} 
-                          className="w-full h-full object-cover"
-                          referrerPolicy="no-referrer"
-                        />
-                      ) : (
-                        <Film size={14} className="text-zinc-600" />
-                      )}
-                    </div>
-                    <span className="text-[0.6875rem] font-bold text-zinc-400 group-hover:text-white truncate">
-                      {source.name}
-                    </span>
+                    <Tv size={14} className={!isFilmsView ? 'text-black' : 'text-zinc-400'} />
+                    TV EN DIRECT
                   </button>
-                ))}
+                  <button
+                    onClick={() => { navigate('/films'); setIsPortalOpen(false); }}
+                    className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${
+                      isFilmsView ? 'bg-white text-black shadow-sm' : 'text-zinc-400 hover:text-foreground'
+                    }`}
+                  >
+                    <Film size={14} className={isFilmsView ? 'text-black' : 'text-zinc-400'} />
+                    FILMS & SÉRIES
+                  </button>
+                </div>
+
+                {!isFilmsView && (
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-3 h-3" />
+                    <input
+                      autoFocus
+                      type="text"
+                      placeholder={`Chercher ${portalTab === 'Country' ? 'pays' : 'genre'}...`}
+                      aria-label={`Chercher ${portalTab === 'Country' ? 'pays' : 'genre'}`}
+                      className="w-full bg-background border-none rounded-lg py-2 pl-9 pr-4 text-xs text-foreground focus:ring-2 focus:ring-white/50 outline-none"
+                      value={portalSearch}
+                      onChange={(e) => setPortalSearch(e.target.value)}
+                    />
+                  </div>
+                )}
               </div>
 
-              {customPlaylists.length > 0 && (
-                <div className="border-t border-border p-2">
-                  <p className="text-[0.5625rem] font-black uppercase tracking-widest text-zinc-500 px-2 py-1">Mes Playlists</p>
-                  {customPlaylists.map((pl) => (
-                    <div key={pl.url} className="flex items-center gap-2 p-2 rounded-xl hover:bg-background group">
+              {!isFilmsView && (
+                <>
+                  <div className="p-1 bg-background flex gap-1 mx-1 mt-1 rounded-lg">
+                    <button
+                      onClick={() => { setPortalTab('Country'); setPortalSearch(''); }}
+                      className={`flex-1 py-1.5 rounded-lg text-[0.625rem] font-black tracking-widest transition-colors ${portalTab === 'Country' ? 'bg-card text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                    >
+                      PAYS
+                    </button>
+                    <button
+                      onClick={() => { setPortalTab('Genre'); setPortalSearch(''); }}
+                      className={`flex-1 py-1.5 rounded-lg text-[0.625rem] font-black tracking-widest transition-colors ${portalTab === 'Genre' ? 'bg-card text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                    >
+                      GENRES
+                    </button>
+                  </div>
+
+                  <div className="flex-1 overflow-y-auto p-2 custom-scrollbar grid grid-cols-1 gap-1">
+                    {filteredPortals.map((source) => (
                       <button
-                        onClick={() => { onLoadPlaylist(pl.url); setIsPortalOpen(false); }}
-                        className="flex-1 text-left text-[0.6875rem] font-bold text-zinc-400 group-hover:text-white truncate"
+                        key={source.url}
+                        onClick={() => handlePortalSelect(source)}
+                        className="flex items-center gap-3 p-2 rounded-xl hover:bg-background transition-all text-left group"
                       >
-                        {pl.name}
+                        <div className="w-8 h-8 flex-shrink-0 flex items-center justify-center overflow-hidden transition-colors">
+                          {source.code ? (
+                            <img 
+                              src={`https://flagcdn.com/w40/${source.code}.png`} 
+                              alt={source.name} 
+                              className="w-full h-full object-cover"
+                              referrerPolicy="no-referrer"
+                            />
+                          ) : (
+                            <Film size={14} className="text-zinc-600" />
+                          )}
+                        </div>
+                        <span className="text-[0.6875rem] font-bold text-zinc-400 group-hover:text-foreground truncate">
+                          {source.name}
+                        </span>
                       </button>
-                      <button
-                        onClick={() => {
-                          deleteCustomPlaylist(pl.url);
-                          setCustomPlaylists(getCustomPlaylists());
-                        }}
-                        className="p-1 rounded hover:bg-red-500/10 text-zinc-600 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
-                      >
-                        <Trash2 size={12} />
-                      </button>
+                    ))}
+                  </div>
+
+                  {customPlaylists.length > 0 && (
+                    <div className="border-t border-border p-2">
+                      <p className="text-[0.5625rem] font-black uppercase tracking-widest text-zinc-500 px-2 py-1">Mes Playlists</p>
+                      {customPlaylists.map((pl) => (
+                        <div key={pl.url} className="flex items-center gap-2 p-2 rounded-xl hover:bg-background group">
+                          <button
+                            onClick={() => { onLoadPlaylist(pl.url); setIsPortalOpen(false); }}
+                            className="flex-1 text-left text-[0.6875rem] font-bold text-zinc-400 group-hover:text-foreground truncate"
+                          >
+                            {pl.name}
+                          </button>
+                          <button
+                            onClick={() => {
+                              deleteCustomPlaylist(pl.url);
+                              setCustomPlaylists(getCustomPlaylists());
+                            }}
+                            className="p-1 rounded hover:bg-red-500/10 text-zinc-600 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  )}
+                </>
               )}
             </div>
           </>
@@ -491,19 +560,19 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
 
       {isPasscodeOpen && (
         <Dialog open={isPasscodeOpen} onOpenChange={setIsPasscodeOpen}>
-          <DialogContent className="sm:max-w-md bg-[#080808] border-white/10 rounded-[32px] p-10 md:p-14 shadow-2xl overflow-hidden">
+          <DialogContent className="sm:max-w-md bg-card border-border rounded-[32px] p-10 md:p-14 shadow-2xl overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-white/30 to-transparent" />
             <div className="flex flex-col items-center gap-8 w-full">
               <div className="relative">
                 <div className="absolute inset-0 bg-white/10 blur-3xl rounded-full scale-150 animate-pulse" />
-                <div className="relative w-20 h-20 bg-gradient-to-br from-white/10 to-zinc-900 rounded-[24px] flex items-center justify-center text-white border border-white/20">
+                <div className="relative w-20 h-20 bg-gradient-to-br from-white/10 to-zinc-900 rounded-[24px] flex items-center justify-center text-foreground border border-white/20">
                   <Lock size={36} strokeWidth={1.5} />
                 </div>
               </div>
               
               <div className="space-y-4 text-center">
-                <DialogTitle className="text-2xl font-light text-white tracking-tight uppercase leading-none italic">
-                  Section <span className="text-white font-black not-italic">ADULTE</span>
+                <DialogTitle className="text-2xl font-light text-foreground tracking-tight uppercase leading-none italic">
+                  Section <span className="text-foreground font-black not-italic">ADULTE</span>
                 </DialogTitle>
                 <DialogDescription className="text-xs text-zinc-500 leading-relaxed font-medium">
                   Saisissez le code secret pour confirmer votre âge et accéder au contenu.
@@ -521,7 +590,7 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
                       setPasscodeInput(e.target.value);
                       setPasscodeError(false);
                     }}
-                    className={`h-16 text-center text-3xl font-black tracking-[0.4em] bg-white/5 border-2 ${passcodeError ? 'border-destructive text-destructive' : 'border-white/5 focus-visible:ring-0 focus-visible:border-white/40'} rounded-2xl`}
+                    className={`h-16 text-center text-3xl font-black tracking-[0.4em] bg-white/5 border-2 ${passcodeError ? 'border-destructive text-destructive' : 'border-border focus-visible:ring-0 focus-visible:border-white/40'} rounded-2xl`}
                   />
                   
                   <div className="h-4 flex items-center justify-center">
@@ -555,19 +624,19 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
 
       {isImportOpen && (
         <Dialog open={isImportOpen} onOpenChange={setIsImportOpen}>
-          <DialogContent className="sm:max-w-md bg-[#080808] border-white/10 rounded-[32px] p-8 md:p-10 shadow-2xl overflow-hidden">
+          <DialogContent className="sm:max-w-md bg-card border-border rounded-[32px] p-8 md:p-10 shadow-2xl overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-white/30 to-transparent" />
             
             <div className="flex flex-col items-center gap-6 w-full">
               <div className="relative">
                 <div className="absolute inset-0 bg-white/10 blur-3xl rounded-full scale-150 animate-pulse" />
-                <div className="relative w-16 h-16 bg-gradient-to-br from-white/10 to-zinc-900 rounded-[24px] flex items-center justify-center text-white border border-white/20">
+                <div className="relative w-16 h-16 bg-gradient-to-br from-white/10 to-zinc-900 rounded-[24px] flex items-center justify-center text-foreground border border-white/20">
                   <Plus size={28} strokeWidth={2} />
                 </div>
               </div>
 
               <div className="space-y-2 text-center w-full">
-                <DialogTitle className="text-xl font-bold text-white tracking-tight uppercase">
+                <DialogTitle className="text-xl font-bold text-foreground tracking-tight uppercase">
                   Importer une Playlist
                 </DialogTitle>
                 <DialogDescription className="text-xs text-zinc-500 font-medium">
@@ -590,10 +659,10 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
                     <div className="space-y-3">
                       <Input type="text" placeholder="Nom de la playlist (optionnel)"
                         value={importName} onChange={(e) => setImportName(e.target.value)}
-                        className="h-14 bg-white/5 border-2 border-white/5 rounded-2xl px-5 text-sm text-white focus-visible:ring-0 focus-visible:border-white/40 transition-all placeholder:text-zinc-600" />
+                        className="h-14 bg-white/5 border-2 border-border rounded-2xl px-5 text-sm text-foreground focus-visible:ring-0 focus-visible:border-white/40 transition-all placeholder:text-zinc-600" />
                       <Input type="url" placeholder="https://exemple.com/playlist.m3u"
                         value={importUrl} onChange={(e) => { setImportUrl(e.target.value); setImportError(''); }}
-                        className="h-14 bg-white/5 border-2 border-white/5 rounded-2xl px-5 text-sm text-white focus-visible:ring-0 focus-visible:border-white/40 transition-all placeholder:text-zinc-600" />
+                        className="h-14 bg-white/5 border-2 border-border rounded-2xl px-5 text-sm text-foreground focus-visible:ring-0 focus-visible:border-white/40 transition-all placeholder:text-zinc-600" />
                     </div>
                     {importError && (
                       <div className="flex items-center gap-2 text-destructive mt-1 justify-center">
@@ -612,12 +681,12 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
                 </TabsContent>
                 
                 <TabsContent value="file" className="mt-0">
-                  <label className="flex flex-col items-center justify-center gap-4 p-8 h-[220px] border-2 border-dashed border-white/10 rounded-[24px] cursor-pointer hover:border-white/30 hover:bg-white/5 transition-all group">
+                  <label className="flex flex-col items-center justify-center gap-4 p-8 h-[220px] border-2 border-dashed border-border rounded-[24px] cursor-pointer hover:border-white/30 hover:bg-white/5 transition-all group">
                     <div className="w-14 h-14 rounded-full bg-white/5 flex items-center justify-center group-hover:scale-110 group-hover:bg-white/10 transition-all">
-                      <FileUp size={24} className="text-zinc-400 group-hover:text-white transition-colors" />
+                      <FileUp size={24} className="text-zinc-400 group-hover:text-foreground transition-colors" />
                     </div>
                     <div className="text-center space-y-1.5">
-                      <p className="text-sm text-white font-bold tracking-wide">Parcourir les fichiers</p>
+                      <p className="text-sm text-foreground font-bold tracking-wide">Parcourir les fichiers</p>
                       <p className="text-xs text-zinc-500 font-medium tracking-wide">Formats acceptés : .m3u, .m3u8</p>
                     </div>
                     <input type="file" accept=".m3u,.m3u8" className="hidden" onChange={handleFileImport} />
@@ -631,19 +700,19 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
 
       {isCanalOpen && (
         <Dialog open={isCanalOpen} onOpenChange={setIsCanalOpen}>
-          <DialogContent className="sm:max-w-md bg-[#080808] border-white/10 rounded-[32px] p-10 md:p-14 shadow-2xl overflow-hidden">
+          <DialogContent className="sm:max-w-md bg-card border-border rounded-[32px] p-10 md:p-14 shadow-2xl overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-white/30 to-transparent" />
             <div className="flex flex-col items-center gap-8 w-full">
               <div className="relative">
                 <div className="absolute inset-0 bg-white/10 blur-3xl rounded-full scale-150 animate-pulse" />
-                <div className="relative w-20 h-20 bg-gradient-to-br from-white/10 to-zinc-900 rounded-[24px] flex items-center justify-center text-white border border-white/20">
+                <div className="relative w-20 h-20 bg-gradient-to-br from-white/10 to-zinc-900 rounded-[24px] flex items-center justify-center text-foreground border border-white/20">
                   <Tv size={36} strokeWidth={1.5} />
                 </div>
               </div>
               
               <div className="space-y-4 text-center">
-                <DialogTitle className="text-2xl font-light text-white tracking-tight uppercase leading-none italic">
-                  Accès <span className="text-white font-black not-italic">CANAL+</span>
+                <DialogTitle className="text-2xl font-light text-foreground tracking-tight uppercase leading-none italic">
+                  Accès <span className="text-foreground font-black not-italic">CANAL+</span>
                 </DialogTitle>
                 <DialogDescription className="text-xs text-zinc-500 leading-relaxed font-medium">
                   Saisissez le code secret pour déverrouiller le téléchargement.
@@ -661,7 +730,7 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
                       setCanalInput(e.target.value);
                       setCanalError(false);
                     }}
-                    className={`h-16 text-center text-3xl font-black tracking-[0.4em] bg-white/5 border-2 ${canalError ? 'border-destructive text-destructive' : 'border-white/5 focus-visible:ring-0 focus-visible:border-white/40'} rounded-2xl`}
+                    className={`h-16 text-center text-3xl font-black tracking-[0.4em] bg-white/5 border-2 ${canalError ? 'border-destructive text-destructive' : 'border-border focus-visible:ring-0 focus-visible:border-white/40'} rounded-2xl`}
                   />
                   
                   <div className="h-4 flex items-center justify-center">

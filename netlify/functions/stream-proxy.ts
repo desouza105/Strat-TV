@@ -47,11 +47,15 @@ async function safeFetchStream(targetUrl: string, requestOrigin: string | undefi
   const timeoutId = setTimeout(() => controller.abort(), 8000);
   try {
     const response = await fetch(url.toString(), {
-      signal: controller.signal
+      signal: controller.signal,
+      redirect: 'follow'
     });
     clearTimeout(timeoutId);
+    if (response.url && response.url !== url.toString()) {
+      console.error(`Stream proxy redirected: requested ${url.toString()} -> final ${response.url}`);
+    }
     if (!response.ok) {
-      throw new Error(`Failed to fetch from target: ${response.statusText}`);
+      throw new Error(`Failed to fetch from target (${response.url || url.toString()}): ${response.statusText}`);
     }
 
     const MAX_SIZE = 20 * 1024 * 1024; // 20 MB
@@ -109,7 +113,7 @@ async function safeFetchStream(targetUrl: string, requestOrigin: string | undefi
         if (trimmedLine.startsWith('#EXT-X-KEY') || trimmedLine.startsWith('#EXT-X-MAP')) {
           return trimmedLine.replace(/URI="([^"]+)"/, (match, uriValue) => {
             try {
-              const absoluteUrl = new URL(uriValue, targetUrl).toString();
+              const absoluteUrl = new URL(uriValue, response.url || targetUrl).toString();
               return `URI="/api/stream-proxy?url=${encodeURIComponent(absoluteUrl)}"`;
             } catch {
               return match;
@@ -117,7 +121,7 @@ async function safeFetchStream(targetUrl: string, requestOrigin: string | undefi
           });
         } else if (trimmedLine.length > 0 && !trimmedLine.startsWith('#')) {
           try {
-            const absoluteUrl = new URL(trimmedLine, targetUrl).toString();
+            const absoluteUrl = new URL(trimmedLine, response.url || targetUrl).toString();
             return `/api/stream-proxy?url=${encodeURIComponent(absoluteUrl)}`;
           } catch {
             return trimmedLine;

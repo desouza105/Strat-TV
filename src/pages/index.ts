@@ -1,0 +1,10 @@
+export { HomePage } from './HomePage';
+export { SearchPage } from './SearchPage';
+export { TonightPage } from './TonightPage';
+export { WatchlistPage } from './WatchlistPage';
+export { HistoryPage } from './HistoryPage';
+export { MovieDetailPage } from './MovieDetailPage';
+export { TVDetailPage } from './TVDetailPage';
+export { WatchMoviePage } from './WatchMoviePage';
+export { WatchTVPage } from './WatchTVPage';
+export { NotFoundPage } from './NotFoundPage';

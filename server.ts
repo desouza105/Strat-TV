@@ -59,12 +59,16 @@ async function safeFetchPlaylist(targetUrl: string, requestOrigin: string | unde
 
   try {
     const response = await fetch(url.toString(), {
-      signal: controller.signal
+      signal: controller.signal,
+      redirect: 'follow'
     });
     clearTimeout(timeoutId);
 
+    if (response.url && response.url !== url.toString()) {
+      console.error(`Stream proxy redirected: requested ${url.toString()} -> final ${response.url}`);
+    }
     if (!response.ok) {
-      throw new Error(`Failed to fetch from target: ${response.statusText}`);
+      throw new Error(`Failed to fetch from target (${response.url || url.toString()}): ${response.statusText}`);
     }
 
     const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
@@ -228,7 +232,7 @@ async function safeFetchStream(targetUrl: string, requestOrigin: string | undefi
         if (trimmedLine.startsWith('#EXT-X-KEY') || trimmedLine.startsWith('#EXT-X-MAP')) {
           return trimmedLine.replace(/URI="([^"]+)"/, (match, uriValue) => {
             try {
-              const absoluteUrl = new URL(uriValue, targetUrl).toString();
+              const absoluteUrl = new URL(uriValue, response.url || targetUrl).toString();
               return `URI="/api/stream-proxy?url=${encodeURIComponent(absoluteUrl)}"`;
             } catch {
               return match;
@@ -236,7 +240,7 @@ async function safeFetchStream(targetUrl: string, requestOrigin: string | undefi
           });
         } else if (trimmedLine.length > 0 && !trimmedLine.startsWith('#')) {
           try {
-            const absoluteUrl = new URL(trimmedLine, targetUrl).toString();
+            const absoluteUrl = new URL(trimmedLine, response.url || targetUrl).toString();
             return `/api/stream-proxy?url=${encodeURIComponent(absoluteUrl)}`;
           } catch {
             return trimmedLine;
@@ -313,6 +317,53 @@ async function validateUrl(targetUrl: string): Promise<boolean> {
 async function startServer() {
   const app = express();
   const PORT = 3000;
+
+  // TMDB API Proxy
+  app.get("/api/tmdb/*", async (req, res) => {
+    try {
+      const endpoint = '/' + req.params[0];
+      
+      if (!endpoint.startsWith('/') || endpoint.includes('..')) {
+        return res.status(400).json({ error: "Invalid endpoint" });
+      }
+
+      const allowedPrefixes = ['/movie', '/tv', '/trending', '/search', '/discover', '/genre'];
+      if (!allowedPrefixes.some(prefix => endpoint.startsWith(prefix))) {
+        return res.status(400).json({ error: "Endpoint not allowed" });
+      }
+
+      const apiKey = process.env.TMDB_API_KEY;
+      if (!apiKey) {
+        return res.status(500).json({ error: "Server misconfiguration: TMDB_API_KEY missing" });
+      }
+
+      // Convert the query object to a query string
+      const queryParams = new URLSearchParams(req.query as Record<string, string>).toString();
+      let tmdbUrl = `https://api.themoviedb.org/3${endpoint}${queryParams ? `?${queryParams}` : ''}`;
+
+      const headers: HeadersInit = {
+        'Accept': 'application/json',
+      };
+
+      if (apiKey.length > 50) {
+        headers['Authorization'] = `Bearer ${apiKey}`;
+      } else {
+        const urlObj = new URL(tmdbUrl);
+        urlObj.searchParams.append('api_key', apiKey);
+        tmdbUrl = urlObj.toString();
+      }
+
+      const response = await fetch(tmdbUrl, { headers });
+      const data = await response.json();
+
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      res.setHeader("Content-Type", "application/json");
+      res.status(response.status).json(data);
+    } catch (error: any) {
+      console.error("TMDB Proxy Error:", error);
+      res.status(500).json({ error: "Internal Server Error" });
+    }
+  });
 
   // Simple Proxy Endpoint to bypass CORS
   app.get("/api/proxy", async (req, res) => {

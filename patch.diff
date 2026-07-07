@@ -1,0 +1,39 @@
+--- src/components/VideoPlayer.tsx
++++ src/components/VideoPlayer.tsx
+@@ -64,6 +64,30 @@
+   const stallTimeoutRef = useRef<NodeJS.Timeout | number | null>(null);
+   const lastCurrentTimeRef = useRef<number>(0);
++  const playPromiseRef = useRef<Promise<void> | null>(null);
++  const [needsUnmutePrompt, setNeedsUnmutePrompt] = useState(false);
++
++  const safePlay = async () => {
++    const video = videoRef.current;
++    if (!video) return;
++
++    if (playPromiseRef.current) {
++      await playPromiseRef.current.catch(() => {});
++    }
++
++    try {
++      playPromiseRef.current = video.play();
++      await playPromiseRef.current;
++      setIsPlaying(true);
++    } catch (error: any) {
++      if (error.name === 'NotAllowedError') {
++        video.muted = true;
++        setIsMuted(true);
++        setNeedsUnmutePrompt(true);
++        try {
++          playPromiseRef.current = video.play();
++          await playPromiseRef.current;
++          setIsPlaying(true);
++        } catch (e) {
++          setIsPlaying(false);
++        }
++      } else {
++        setIsPlaying(false);
++      }
++    }
++  };
+ 
+   useImperativeHandle(ref, () => ({

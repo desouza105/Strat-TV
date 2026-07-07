@@ -219,7 +219,7 @@ export default function Sidebar({
             onClick={() => setShowOnlyWorking(!showOnlyWorking)}
             className={`text-[0.625rem] font-black px-2 py-0.5 rounded transition-colors uppercase tracking-widest ${
               showOnlyWorking 
-                ? 'bg-white/10 text-white' 
+                ? 'bg-white/10 text-foreground' 
                 : 'bg-zinc-800 text-zinc-500'
             }`}
           >

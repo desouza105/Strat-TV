@@ -70,9 +70,9 @@ export default function SplashScreen({ onComplete }: { onComplete: () => void })
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
               transition={{ duration: 1.2, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-              className="text-5xl md:text-6xl font-normal tracking-tighter text-white flex items-baseline justify-center"
+              className="text-5xl md:text-6xl font-normal tracking-tighter text-foreground flex items-baseline justify-center"
             >
-              Moody<span className="font-serif italic text-white/40 ml-1 font-normal tracking-tight">.</span>
+              Moody<span className="font-serif italic text-foreground/40 ml-1 font-normal tracking-tight">.</span>
             </motion.h1>
           </div>
           
@@ -110,7 +110,7 @@ export default function SplashScreen({ onComplete }: { onComplete: () => void })
             <span className="text-[0.5625rem] font-black tracking-widest text-zinc-500 uppercase">
               {progress < 30 ? 'Connexion' : progress < 70 ? 'Chargement' : 'Initialisation'}
             </span>
-            <span className="text-[0.625rem] font-black tracking-widest text-white font-mono opacity-80">
+            <span className="text-[0.625rem] font-black tracking-widest text-foreground font-mono opacity-80">
               {Math.round(progress)}%
             </span>
           </div>
@@ -129,7 +129,7 @@ export default function SplashScreen({ onComplete }: { onComplete: () => void })
 
       <motion.div 
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 2, delay: 1 }}
-        className="absolute bottom-8 right-8 md:bottom-12 md:right-12 text-[0.5625rem] font-black text-white/20 uppercase tracking-[0.4em] font-mono"
+        className="absolute bottom-8 right-8 md:bottom-12 md:right-12 text-[0.5625rem] font-black text-foreground/20 uppercase tracking-[0.4em] font-mono"
       >
         SYS.v1.2
       </motion.div>
