@@ -5,8 +5,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { Download, ChevronDown, Globe, Film, MapPin, Search, LayoutGrid, Radio, Grid2x2, Flame, Lock, ShieldCheck, Tv, AlertCircle, Plus, Trash2, Link, FileUp, X as XIcon, BarChart2, Contrast, Menu, Play } from 'lucide-react';
+import { Download, ChevronDown, Globe, MapPin, Search, LayoutGrid, Radio, Grid2x2, Flame, Lock, ShieldCheck, Tv, AlertCircle, Plus, Trash2, Link, FileUp, X as XIcon, BarChart2, Contrast, Menu, Play } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { PORTAL_SOURCES, PlaylistSource, getCustomPlaylists, saveCustomPlaylist, deleteCustomPlaylist } from '../constants/portal_data';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -25,10 +24,7 @@ interface HeaderProps {
 }
 
 export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName, isSplitView, onToggleSplitView, onOpenStats }: HeaderProps) {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const isFilmsView = location.pathname.startsWith('/films');
-
+      
   const isMobileLandscape = useMediaQuery('(orientation: landscape) and (max-height: 500px)');
   
   const africaUrl = 'https://tvradiozap.eu/live/d/tvzaf.m3u';
@@ -176,41 +172,13 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
     <>
       <header className={`${isMobileLandscape ? 'h-10' : 'h-16 md:h-20'} bg-card/80 backdrop-blur-md border-b border-border px-4 md:px-8 flex items-center justify-between sticky top-0 z-50 transition-colors duration-300`}>
         <div className="flex items-center gap-6">
-          <div className="flex items-center gap-3">
-            <div className="flex-shrink-0">
-              <img 
-                src="https://image.noelshack.com/fichiers/2026/22/2/1779829245-moo-dy.png" 
-                alt="Moody Logo" 
-                className={`${isMobileLandscape ? 'h-4' : 'h-6 md:h-8'} w-auto object-contain brightness-110`}
-                referrerPolicy="no-referrer"
-              />
-            </div>
-          </div>
+
 
           <div className="hidden lg:flex items-center gap-1 xl:gap-2">
             {/* Mode Switcher */}
-            <div className="flex items-center bg-black/40 backdrop-blur-md rounded-xl p-1 mr-2 border border-border">
-              <button
-                onClick={() => navigate('/')}
-                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-2 ${
-                  !isFilmsView ? 'bg-white text-black shadow-sm' : 'text-zinc-400 hover:text-foreground'
-                }`}
-              >
-                <Tv size={14} className={!isFilmsView ? 'text-black' : 'text-zinc-400'} />
-                TV EN DIRECT
-              </button>
-              <button
-                onClick={() => navigate('/films')}
-                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-2 ${
-                  isFilmsView ? 'bg-white text-black shadow-sm' : 'text-zinc-400 hover:text-foreground'
-                }`}
-              >
-                <Film size={14} className={isFilmsView ? 'text-black' : 'text-zinc-400'} />
-                FILMS & SÉRIES
-              </button>
-            </div>
+            
 
-            {!isFilmsView && (
+            
               <>
                 {/* Country Selector Button */}
                 <div className="relative">
@@ -298,23 +266,13 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
                   <Plus size={14} className="text-muted-foreground" /> IMPORT
                 </Button>
               </>
-            )}
           </div>
         </div>
 
         <div className="flex items-center gap-2 md:gap-4">
           {/* Mobile Quick Access buttons */}
           <div className="flex lg:hidden items-center gap-1.5 overflow-x-auto scrollbar-none pr-2">
-            <button
-              onClick={() => setIsHighContrast(!isHighContrast)}
-              className={`flex-shrink-0 p-2 rounded-lg transition-all active:scale-95 ${
-                isHighContrast ? 'bg-card text-foreground' : 'bg-card text-muted-foreground'
-              }`}
-              title="Mode Contraste Élevé"
-            >
-              <Contrast size={18} />
-            </button>
-            {!isFilmsView && (
+
               <button
                 onClick={onToggleSplitView}
                 className={`flex-shrink-0 p-2 rounded-lg transition-all active:scale-95 ${
@@ -324,7 +282,7 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
               >
                 <Grid2x2 size={18} />
               </button>
-            )}
+
             <button
               onClick={() => setIsPortalOpen(!isPortalOpen)}
               className={`flex-shrink-0 p-2 rounded-lg transition-all active:scale-95 ${
@@ -333,7 +291,7 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
             >
               <Menu size={18} />
             </button>
-            {!isFilmsView && (
+            
               <>
                 <button
                   onClick={() => onLoadPlaylist(africaUrl)}
@@ -404,22 +362,10 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
                   <Plus size={18} />
                 </button>
               </>
-            )}
           </div>
 
           <div className="hidden lg:flex items-center gap-4">
-            <button
-              onClick={() => setIsHighContrast(!isHighContrast)}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all text-xs font-bold uppercase tracking-wider ${
-                isHighContrast 
-                  ? 'bg-white/10 text-foreground' 
-                  : 'bg-zinc-900 text-zinc-400 hover:text-foreground'
-              }`}
-              title="Mode Contraste Élevé"
-            >
-              <Contrast size={14} />
-            </button>
-            {!isFilmsView && (
+
               <>
                 <button
                   onClick={onToggleSplitView}
@@ -432,12 +378,8 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
                   <Grid2x2 size={14} /> {isSplitView ? 'QUITTER MULTI' : 'MULTI-ÉCRAN'}
                 </button>
 
-                <span className="flex items-center gap-2 text-[0.625rem] font-black text-foreground uppercase tracking-[0.2em]">
-                  <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                  SYSTEM LIVE
-                </span>
+
               </>
-            )}
           </div>
         </div>
 
@@ -446,29 +388,6 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
             <div className="fixed inset-0 z-40" onClick={() => setIsPortalOpen(false)} />
             <div className="absolute top-full left-4 lg:left-[180px] w-[calc(100vw-2rem)] md:w-72 max-h-[80vh] bg-card border border-border rounded-2xl shadow-2xl overflow-hidden flex flex-col z-50 animate-in fade-in zoom-in-95 slide-in-from-top-4 duration-200 origin-top">
               <div className="p-3 border-b border-border">
-                {/* Mobile Mode Switcher */}
-                <div className="flex items-center bg-black/40 rounded-xl p-1 mb-3 border border-border">
-                  <button
-                    onClick={() => { navigate('/'); setIsPortalOpen(false); }}
-                    className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${
-                      !isFilmsView ? 'bg-white text-black shadow-sm' : 'text-zinc-400 hover:text-foreground'
-                    }`}
-                  >
-                    <Tv size={14} className={!isFilmsView ? 'text-black' : 'text-zinc-400'} />
-                    TV EN DIRECT
-                  </button>
-                  <button
-                    onClick={() => { navigate('/films'); setIsPortalOpen(false); }}
-                    className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${
-                      isFilmsView ? 'bg-white text-black shadow-sm' : 'text-zinc-400 hover:text-foreground'
-                    }`}
-                  >
-                    <Film size={14} className={isFilmsView ? 'text-black' : 'text-zinc-400'} />
-                    FILMS & SÉRIES
-                  </button>
-                </div>
-
-                {!isFilmsView && (
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-3 h-3" />
                     <input
@@ -481,10 +400,10 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
                       onChange={(e) => setPortalSearch(e.target.value)}
                     />
                   </div>
-                )}
+    
               </div>
 
-              {!isFilmsView && (
+              
                 <>
                   <div className="p-1 bg-background flex gap-1 mx-1 mt-1 rounded-lg">
                     <button
@@ -517,7 +436,7 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
                               referrerPolicy="no-referrer"
                             />
                           ) : (
-                            <Film size={14} className="text-zinc-600" />
+                            <Globe size={14} className="text-zinc-600" />
                           )}
                         </div>
                         <span className="text-[0.6875rem] font-bold text-zinc-400 group-hover:text-foreground truncate">
@@ -552,7 +471,6 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
                     </div>
                   )}
                 </>
-              )}
             </div>
           </>
         )}
