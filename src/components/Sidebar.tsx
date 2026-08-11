@@ -4,10 +4,9 @@
  */
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Search, Tv, Filter, Grid as GridIcon, MapPin, X } from 'lucide-react';
+import { Search, Tv, Filter, MapPin, X } from 'lucide-react';
 import { IPTVChannel } from '../types/iptv';
 import { motion, AnimatePresence } from 'motion/react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 
 interface SidebarProps {
@@ -34,7 +33,6 @@ export default function Sidebar({
   const [filter, setFilter] = useState<string>('all');
   const [showOnlyWorking, setShowOnlyWorking] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
   
   const groups = useMemo(() => {
     const g = new Set<string>();
@@ -226,20 +224,6 @@ export default function Sidebar({
             {showOnlyWorking ? 'ON' : 'OFF'}
           </button>
         </div>
-
-        <Button 
-          variant="secondary"
-          className="w-full flex items-center justify-between rounded-xl h-10"
-          onClick={() => setIsCategoriesOpen(true)}
-        >
-          <div className="flex items-center gap-2">
-            <GridIcon size={16} />
-            <span className="font-bold">Catégories</span>
-          </div>
-          <span className="text-xs text-muted-foreground uppercase tracking-widest">
-            {filter === 'all' ? 'Toutes' : filter}
-          </span>
-        </Button>
       </div>
 
       <div className="flex-1 overflow-y-auto custom-scrollbar p-2">
@@ -327,57 +311,6 @@ export default function Sidebar({
           Accès facilité par le Facilitateur
         </div>
       </div>
-
-      <Dialog open={isCategoriesOpen} onOpenChange={setIsCategoriesOpen}>
-        <DialogContent className="sm:max-w-2xl bg-card border-border shadow-2xl p-6 md:p-8 max-h-[85vh] flex flex-col">
-          <DialogHeader className="mb-4">
-            <DialogTitle className="text-2xl font-bold uppercase tracking-tight flex items-center gap-3">
-              <GridIcon size={24} className="text-primary" />
-              Catégories de chaînes
-            </DialogTitle>
-            <DialogDescription>
-              Sélectionnez une catégorie pour filtrer la liste des chaînes.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="overflow-y-auto custom-scrollbar pr-2 flex-1 min-h-0">
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              <Button
-                variant={filter === 'all' ? 'default' : 'outline'}
-                className="h-auto py-4 flex flex-col items-center justify-center gap-2 rounded-2xl"
-                onClick={() => {
-                  setFilter('all');
-                  setIsCategoriesOpen(false);
-                }}
-              >
-                <GridIcon size={24} className={filter === 'all' ? 'text-primary-foreground text-opacity-80' : 'text-muted-foreground'} />
-                <span className="font-bold text-xs uppercase tracking-wider">Toutes les chaînes</span>
-              </Button>
-              
-              {groups.map((group) => {
-                const count = channels.filter(c => c.group === group).length;
-                return (
-                  <Button
-                    key={group}
-                    variant={filter === group ? 'default' : 'outline'}
-                    className="h-auto py-4 flex flex-col items-center justify-center gap-2 rounded-2xl"
-                    onClick={() => {
-                      setFilter(group);
-                      setIsCategoriesOpen(false);
-                    }}
-                  >
-                    <Tv size={24} className={filter === group ? 'text-primary-foreground text-opacity-80' : 'text-muted-foreground'} />
-                    <div className="text-center">
-                      <span className="font-bold text-xs uppercase tracking-wider block truncate max-w-[120px]">{group}</span>
-                      <span className={`text-[0.625rem] font-medium tracking-widest uppercase mt-1 block ${filter === group ? 'text-primary-foreground text-opacity-70' : 'text-muted-foreground'}`}>{count} chaînes</span>
-                    </div>
-                  </Button>
-                );
-              })}
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </aside>
     </>
   );

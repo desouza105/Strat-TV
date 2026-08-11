@@ -247,24 +247,6 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
                   XXX ADULT
                   {isLoading && isAdultActive && <div className="w-3 h-3 border-2 border-foreground border-t-transparent rounded-full animate-spin ml-1" />}
                 </Button>
-
-                <Button
-                  variant="ghost"
-                  onClick={() => setIsCanalOpen(true)}
-                  disabled={isLoading}
-                  className="flex items-center gap-1.5 xl:gap-2 rounded-xl text-[0.625rem] xl:text-xs px-2 xl:px-4 h-8 xl:h-10 font-bold"
-                >
-                  <Tv size={14} className="text-muted-foreground" />
-                  CANAL+
-                </Button>
-
-                <Button
-                  variant="ghost"
-                  onClick={() => setIsImportOpen(true)}
-                  className="flex items-center gap-1.5 xl:gap-2 rounded-xl text-[0.625rem] xl:text-xs px-2 xl:px-4 h-8 xl:h-10 font-bold"
-                >
-                  <Plus size={14} className="text-muted-foreground" /> IMPORT
-                </Button>
               </>
           </div>
         </div>
@@ -347,19 +329,6 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
                   }`}
                 >
                   <Flame size={18} />
-                </button>
-                <button
-                  onClick={() => setIsCanalOpen(true)}
-                  disabled={isLoading}
-                  className="flex-shrink-0 p-2 rounded-lg transition-all active:scale-95 bg-zinc-900 text-zinc-500"
-                >
-                  <Tv size={18} />
-                </button>
-                <button
-                  onClick={() => setIsImportOpen(true)}
-                  className="flex-shrink-0 p-2 rounded-lg transition-all active:scale-95 bg-zinc-900 border-zinc-800 text-zinc-500 border"
-                >
-                  <Plus size={18} />
                 </button>
               </>
           </div>
