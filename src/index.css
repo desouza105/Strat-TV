@@ -88,9 +88,11 @@
   --accent: #18181b;
   --accent-foreground: #ffffff;
   --destructive: #7f1d1d;
+  --destructive-foreground: #ffffff;
   --border: #27272a;
   --input: #27272a;
   --ring: #3f3f46;
+  --radius: 0.75rem;
 }
 
 :root.high-contrast, .dark.high-contrast {

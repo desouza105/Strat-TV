@@ -476,7 +476,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
       {/* Loading Overlay */}
       {isLoading && !error && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-10">
-          <Loader2 className="w-12 h-12 text-brand-secondary animate-spin" />
+          <Loader2 className="w-12 h-12 text-primary animate-spin" />
         </div>
       )}
 
@@ -502,8 +502,8 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
 
       {/* Error Overlay */}
       {error && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-card z-20 p-6 text-center">
-          <AlertCircle className="w-16 h-16 text-brand-secondary mb-4" />
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/90 backdrop-blur-sm z-20 p-6 text-center">
+          <AlertCircle className="w-16 h-16 text-destructive mb-4" />
           <h3 className="text-xl font-bold text-foreground mb-2">Flux indisponible</h3>
           <p className="text-muted-foreground max-w-md">{error}</p>
         </div>
@@ -537,7 +537,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                   step="0.05"
                   value={volume}
                   onChange={handleVolumeChange}
-                  className="w-24 h-1 bg-zinc-600 rounded-lg appearance-none cursor-pointer accent-brand-secondary"
+                  className="w-24 h-1 bg-white/30 rounded-lg appearance-none cursor-pointer accent-primary"
                 />
               </div>
 
@@ -552,7 +552,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                 <div className="relative">
                   <button 
                     onClick={() => setIsQualityOpen(!isQualityOpen)}
-                    className="flex items-center justify-center gap-1.5 px-3 py-1.5 min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 hover:bg-white/20 rounded-lg transition-colors text-foreground text-[0.625rem] font-black uppercase tracking-widest border border-white/20"
+                    className="flex items-center justify-center gap-1.5 px-3 py-1.5 min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 hover:bg-white/20 rounded-lg transition-colors text-foreground text-[10px] font-semibold uppercase tracking-widest border border-white/20"
                     aria-label="Paramètres de qualité"
                   >
                     <Settings className={`w-3.5 h-3.5 ${isQualityOpen ? 'animate-spin-slow' : ''}`} />
@@ -566,15 +566,15 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
                         transition={{ type: "spring", bounce: 0, duration: 0.4 }}
-                        className="absolute bottom-full right-0 mb-2 w-32 bg-card border border-border rounded-xl shadow-2xl overflow-hidden z-50"
+                        className="absolute bottom-full right-0 mb-2 w-32 bg-background border border-border rounded-xl shadow-2xl overflow-hidden z-50"
                       >
-                        <div className="p-1 uppercase text-[0.625rem] font-black text-muted-foreground border-b border-border text-center bg-background/50">
+                        <div className="p-1.5 uppercase text-[10px] font-semibold text-muted-foreground border-b border-border text-center bg-muted/50">
                           Qualité
                         </div>
                         <div className="max-h-48 overflow-y-auto custom-scrollbar">
                           <button
                             onClick={() => changeQuality(-1)}
-                            className={`w-full px-4 py-2 text-left text-[0.6875rem] font-bold transition-colors ${currentLevel === -1 ? 'bg-brand-primary text-foreground' : 'text-foreground hover:bg-zinc-800'}`}
+                            className={`w-full px-4 py-2 text-left text-xs font-semibold transition-colors ${currentLevel === -1 ? 'bg-primary/10 text-primary' : 'text-foreground hover:bg-muted'}`}
                           >
                             AUTO
                           </button>
@@ -582,7 +582,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                             <button
                               key={level.index}
                               onClick={() => changeQuality(level.index)}
-                              className={`w-full px-4 py-2 text-left text-[0.6875rem] font-bold transition-colors ${currentLevel === level.index ? 'bg-brand-primary text-foreground' : 'text-foreground hover:bg-zinc-800'}`}
+                              className={`w-full px-4 py-2 text-left text-xs font-semibold transition-colors ${currentLevel === level.index ? 'bg-primary/10 text-primary' : 'text-foreground hover:bg-muted'}`}
                             >
                               {level.height}P
                             </button>
@@ -608,7 +608,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
               {isCastAvailable && (
                 <button 
                   onClick={toggleCast}
-                  className={`p-2 flex items-center justify-center min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 hover:bg-white/20 rounded-full transition-colors ${castState === 'connected' ? 'text-brand-primary' : 'text-foreground'}`}
+                  className={`p-2 flex items-center justify-center min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 hover:bg-white/20 rounded-full transition-colors ${castState === 'connected' ? 'text-primary' : 'text-foreground'}`}
                   title="Diffuser"
                   aria-label="Diffuser sur un autre appareil"
                 >
@@ -620,7 +620,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                 <div className="relative">
                   <button
                     onClick={() => setShowTracksMenu(!showTracksMenu)}
-                    className={`p-2 min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 flex items-center justify-center rounded-lg transition-all hover:bg-white/10 ${showTracksMenu ? 'text-foreground bg-white/10' : 'text-zinc-400'}`}
+                    className={`p-2 min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 flex items-center justify-center rounded-lg transition-all hover:bg-muted ${showTracksMenu ? 'text-foreground bg-muted' : 'text-muted-foreground'}`}
                     title="Pistes audio / Sous-titres"
                     aria-label="Pistes audio et sous-titres"
                   >
@@ -635,31 +635,31 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                           initial={{ opacity: 0, scale: 0.9, y: 5 }}
                           animate={{ opacity: 1, scale: 1, y: 0 }}
                           exit={{ opacity: 0, scale: 0.9, y: 5 }}
-                          className="absolute bottom-full right-0 mb-2 bg-zinc-900 border border-zinc-700 rounded-2xl p-3 z-20 min-w-[200px] shadow-2xl"
+                          className="absolute bottom-full right-0 mb-2 bg-background border border-border rounded-xl p-3 z-20 min-w-[200px] shadow-2xl"
                         >
                           {/* Pistes audio */}
                           {audioTracks.length > 1 && (
                             <div className="mb-3">
-                              <p className="text-[0.5625rem] font-black text-zinc-500 uppercase tracking-widest mb-2 px-1">
+                              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-2 px-1">
                                 Piste audio
                               </p>
                               {audioTracks.map(track => (
                                 <button
                                   key={track.id}
                                   onClick={() => handleAudioChange(track.id)}
-                                  className={`flex items-center justify-between w-full px-3 py-2.5 rounded-xl text-sm font-bold transition-colors ${activeAudio === track.id ? 'bg-white/10 text-foreground' : 'text-zinc-400 hover:bg-white/5 hover:text-foreground'}`}
+                                  className={`flex items-center justify-between w-full px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${activeAudio === track.id ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}`}
                                 >
                                   <span className="flex items-center gap-2">
                                     <Volume2 size={14} />
                                     {track.name}
                                   </span>
                                   {track.lang && (
-                                    <span className="text-[0.625rem] text-zinc-600 uppercase">
+                                    <span className="text-[10px] text-muted-foreground uppercase">
                                       {track.lang}
                                     </span>
                                   )}
                                   {activeAudio === track.id && (
-                                    <Check size={14} className="text-foreground ml-1" />
+                                    <Check size={14} className="text-primary ml-1" />
                                   )}
                                 </button>
                               ))}
@@ -668,26 +668,26 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                           
                           {/* Séparateur */}
                           {audioTracks.length > 1 && subtitleTracks.length > 0 && (
-                            <div className="h-[0.5px] bg-zinc-700 my-2 mx-1" />
+                            <div className="h-[1px] bg-border my-2 mx-1" />
                           )}
                           
                           {/* Sous-titres */}
                           {subtitleTracks.length > 0 && (
                             <div>
-                              <p className="text-[0.5625rem] font-black text-zinc-500 uppercase tracking-widest mb-2 px-1">
+                              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-2 px-1">
                                 Sous-titres
                               </p>
                               
                               <button
                                 onClick={() => handleSubtitleChange(-1)}
-                                className={`flex items-center justify-between w-full px-3 py-2.5 rounded-xl text-sm font-bold transition-colors ${activeSubtitle === -1 ? 'bg-white/10 text-foreground' : 'text-zinc-400 hover:bg-white/5 hover:text-foreground'}`}
+                                className={`flex items-center justify-between w-full px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${activeSubtitle === -1 ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}`}
                               >
                                 <span className="flex items-center gap-2">
                                   <CaptionsOff size={14} />
                                   Désactivé
                                 </span>
                                 {activeSubtitle === -1 && (
-                                  <Check size={14} className="text-foreground" />
+                                  <Check size={14} className="text-primary" />
                                 )}
                               </button>
                               
@@ -695,7 +695,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                                 <button
                                   key={track.id}
                                   onClick={() => handleSubtitleChange(track.id)}
-                                  className={`flex items-center justify-between w-full px-3 py-2.5 rounded-xl text-sm font-bold transition-colors ${activeSubtitle === track.id ? 'bg-white/10 text-foreground' : 'text-zinc-400 hover:bg-white/5 hover:text-foreground'}`}
+                                  className={`flex items-center justify-between w-full px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${activeSubtitle === track.id ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}`}
                                 >
                                   <span className="flex items-center gap-2">
                                     <Captions size={14} />
@@ -703,12 +703,12 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                                   </span>
                                   <span className="flex items-center gap-2">
                                     {track.lang && (
-                                      <span className="text-[0.625rem] text-zinc-600 uppercase">
+                                      <span className="text-[10px] text-muted-foreground uppercase">
                                         {track.lang}
                                       </span>
                                     )}
                                     {activeSubtitle === track.id && (
-                                      <Check size={14} className="text-foreground" />
+                                      <Check size={14} className="text-primary" />
                                     )}
                                   </span>
                                 </button>
@@ -725,7 +725,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
               <div className="relative">
                 <button
                   onClick={() => setShowSleepMenu(!showSleepMenu)}
-                  className={`p-2 min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 flex items-center justify-center rounded-lg transition-all hover:bg-white/10 ${sleepTimerActive ? 'text-foreground' : 'text-zinc-400'}`}
+                  className={`p-2 min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 flex items-center justify-center rounded-lg transition-all hover:bg-white/10 ${sleepTimerActive ? 'text-primary' : 'text-muted-foreground'}`}
                   title="Sleep Timer"
                   aria-label="Minuteur de mise en veille"
                 >
@@ -740,9 +740,9 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                         initial={{ opacity: 0, scale: 0.9, y: 5 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.9, y: 5 }}
-                        className="absolute bottom-full right-0 mb-2 bg-zinc-900 border border-zinc-700 rounded-2xl p-3 z-20 min-w-[160px] shadow-2xl"
+                        className="absolute bottom-full right-0 mb-2 bg-background border border-border rounded-xl p-3 z-20 min-w-[160px] shadow-2xl"
                       >
-                        <p className="text-[0.5625rem] font-black text-zinc-500 uppercase tracking-widest mb-2 px-1">
+                        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-2 px-1">
                           Arrêter dans
                         </p>
                         {[15, 30, 60, 90].map(min => (
@@ -752,10 +752,10 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                               onStartSleepTimer?.(min);
                               setShowSleepMenu(false);
                             }}
-                            className="flex items-center justify-between w-full px-3 py-2.5 rounded-xl text-sm font-bold text-zinc-300 hover:bg-white/10 hover:text-foreground transition-colors"
+                            className="flex items-center justify-between w-full px-3 py-2 rounded-lg text-xs font-semibold text-foreground hover:bg-muted transition-colors"
                           >
                             <span>{min} min</span>
-                            <span className="text-[0.625rem] text-zinc-600">
+                            <span className="text-[10px] text-muted-foreground">
                               {min >= 60 ? `${min/60}h` : ''}
                             </span>
                           </button>

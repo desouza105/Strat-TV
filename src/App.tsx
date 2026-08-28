@@ -485,20 +485,20 @@ export default function App() {
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
-                      className="w-full max-w-6xl z-20 mb-3 flex items-center justify-between bg-zinc-900/80 backdrop-blur-sm border border-zinc-800 rounded-2xl px-4 py-3"
+                      className="w-full max-w-6xl z-20 mb-3 flex items-center justify-between bg-background/80 backdrop-blur-sm border border-border rounded-2xl px-4 py-3 shadow-sm"
                     >
                       <div className="flex items-center gap-3">
-                        <Timer size={16} className="text-white" />
-                        <span className="text-sm font-bold text-white uppercase tracking-wider">
+                        <Timer size={16} className="text-foreground" />
+                        <span className="text-sm font-bold text-foreground uppercase tracking-wider">
                           Arrêt dans
                         </span>
-                        <span className="text-lg font-black text-white tabular-nums">
+                        <span className="text-lg font-black text-foreground tabular-nums">
                           {formatRemaining(sleepTimerRemaining)}
                         </span>
                       </div>
                       <button
                         onClick={cancelSleepTimer}
-                        className="flex items-center gap-2 text-xs font-bold text-zinc-400 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-white/5"
+                        className="flex items-center gap-2 text-xs font-bold text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-lg hover:bg-muted"
                       >
                         <XIcon size={14} /> Annuler
                       </button>
@@ -548,12 +548,12 @@ export default function App() {
               >
                 {error ? (
                   <div className="space-y-6">
-                    <div className="w-20 h-20 bg-white/10 rounded-full flex items-center justify-center mx-auto border border-white/20">
-                      <WifiOff className="text-white w-10 h-10" />
+                    <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mx-auto border border-border">
+                      <WifiOff className="text-muted-foreground w-10 h-10" />
                     </div>
                     <div className="space-y-2">
-                      <h3 className="text-2xl font-black uppercase text-white tracking-tight">Erreur de lecture</h3>
-                      <p className="text-zinc-400 leading-relaxed text-sm">{error}</p>
+                      <h3 className="text-2xl font-bold uppercase text-foreground tracking-tight">Erreur de lecture</h3>
+                      <p className="text-muted-foreground leading-relaxed text-sm">{error}</p>
                     </div>
                   </div>
                 ) : (

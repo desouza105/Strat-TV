@@ -12,6 +12,13 @@ import dns from 'dns/promises';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+class ProxyError extends Error {
+  constructor(public status: number, message: string) {
+    super(message);
+    this.name = 'ProxyError';
+  }
+}
+
 async function safeFetchPlaylist(targetUrl: string, requestOrigin: string | undefined) {
   let url: URL;
   try {
@@ -68,7 +75,7 @@ async function safeFetchPlaylist(targetUrl: string, requestOrigin: string | unde
       console.error(`Stream proxy redirected: requested ${url.toString()} -> final ${response.url}`);
     }
     if (!response.ok) {
-      throw new Error(`Failed to fetch from target (${response.url || url.toString()}): ${response.statusText}`);
+      throw new ProxyError(response.status, `Failed to fetch from target (${response.url || url.toString()}): ${response.statusText}`);
     }
 
     const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
@@ -174,7 +181,7 @@ async function safeFetchStream(targetUrl: string, requestOrigin: string | undefi
     });
     clearTimeout(timeoutId);
     if (!response.ok) {
-      throw new Error(`Failed to fetch from target: ${response.statusText}`);
+      throw new ProxyError(response.status, `Failed to fetch from target: ${response.statusText}`);
     }
 
     const MAX_SIZE = 20 * 1024 * 1024; // 20 MB
@@ -339,6 +346,9 @@ async function startServer() {
       if (error.message === 'URL non autorisée') {
         return res.status(400).json({ error: "URL non autorisée" });
       }
+      if (error instanceof ProxyError) {
+        return res.status(error.status).json({ error: error.message });
+      }
       console.error("Proxy error:", error);
       res.status(500).json({ error: error.message || "Internal server error" });
     }
@@ -365,6 +375,9 @@ async function startServer() {
     } catch (error: any) {
       if (error.message === 'URL non autorisée') {
         return res.status(400).json({ error: "URL non autorisée" });
+      }
+      if (error instanceof ProxyError) {
+        return res.status(error.status).json({ error: error.message });
       }
       console.error("Stream Proxy error:", error);
       res.status(500).json({ error: error.message || "Internal server error" });

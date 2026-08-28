@@ -1,39 +1,58 @@
---- src/components/VideoPlayer.tsx
-+++ src/components/VideoPlayer.tsx
-@@ -64,6 +64,30 @@
-   const stallTimeoutRef = useRef<NodeJS.Timeout | number | null>(null);
-   const lastCurrentTimeRef = useRef<number>(0);
-+  const playPromiseRef = useRef<Promise<void> | null>(null);
-+  const [needsUnmutePrompt, setNeedsUnmutePrompt] = useState(false);
-+
-+  const safePlay = async () => {
-+    const video = videoRef.current;
-+    if (!video) return;
-+
-+    if (playPromiseRef.current) {
-+      await playPromiseRef.current.catch(() => {});
-+    }
-+
-+    try {
-+      playPromiseRef.current = video.play();
-+      await playPromiseRef.current;
-+      setIsPlaying(true);
-+    } catch (error: any) {
-+      if (error.name === 'NotAllowedError') {
-+        video.muted = true;
-+        setIsMuted(true);
-+        setNeedsUnmutePrompt(true);
-+        try {
-+          playPromiseRef.current = video.play();
-+          await playPromiseRef.current;
-+          setIsPlaying(true);
-+        } catch (e) {
-+          setIsPlaying(false);
-+        }
-+      } else {
-+        setIsPlaying(false);
-+      }
-+    }
-+  };
+--- server.ts
++++ server.ts
+@@ -12,6 +12,13 @@
+ const __filename = fileURLToPath(import.meta.url);
+ const __dirname = path.dirname(__filename);
  
-   useImperativeHandle(ref, () => ({
++class ProxyError extends Error {
++  constructor(public status: number, message: string) {
++    super(message);
++    this.name = 'ProxyError';
++  }
++}
++
+ async function safeFetchPlaylist(targetUrl: string, requestOrigin: string | undefined) {
+   let url: URL;
+   try {
+@@ -68,7 +75,7 @@
+       console.error(`Stream proxy redirected: requested ${url.toString()} -> final ${response.url}`);
+     }
+     if (!response.ok) {
+-      throw new Error(`Failed to fetch from target (${response.url || url.toString()}): ${response.statusText}`);
++      throw new ProxyError(response.status, `Failed to fetch from target (${response.url || url.toString()}): ${response.statusText}`);
+     }
+ 
+     const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
+@@ -174,7 +181,7 @@
+     });
+     clearTimeout(timeoutId);
+     if (!response.ok) {
+-      throw new Error(`Failed to fetch from target: ${response.statusText}`);
++      throw new ProxyError(response.status, `Failed to fetch from target: ${response.statusText}`);
+     }
+ 
+     const MAX_SIZE = 20 * 1024 * 1024; // 20 MB
+@@ -342,7 +349,10 @@
+       if (error.message === 'URL non autorisée') {
+         return res.status(400).json({ error: "URL non autorisée" });
+       }
+-      console.error("Proxy error:", error);
++      if (error instanceof ProxyError) {
++        return res.status(error.status).json({ error: error.message });
++      }
++      console.error("Playlist Proxy error:", error);
+       res.status(500).json({ error: error.message || "Internal server error" });
+     }
+   });
+@@ -365,7 +375,10 @@
+       if (error.message === 'URL non autorisée') {
+         return res.status(400).json({ error: "URL non autorisée" });
+       }
+-      console.error("Stream Proxy error:", error);
++      if (error instanceof ProxyError) {
++        return res.status(error.status).json({ error: error.message });
++      }
++      console.error("Stream Proxy internal error:", error);
+       res.status(500).json({ error: error.message || "Internal server error" });
+     }
+   });

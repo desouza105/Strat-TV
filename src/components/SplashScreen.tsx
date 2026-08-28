@@ -83,11 +83,11 @@ export default function SplashScreen({ onComplete }: { onComplete: () => void })
             transition={{ duration: 1, delay: 0.6 }}
             className="flex items-center gap-3 mb-16"
           >
-            <div className="w-8 h-[1px] bg-white/20" />
-            <p className="text-[0.625rem] font-black uppercase tracking-[0.4em] text-zinc-500">
+            <div className="w-8 h-[1px] bg-border" />
+            <p className="text-[10px] font-semibold uppercase tracking-[0.4em] text-muted-foreground">
               Expérience Premium
             </p>
-            <div className="w-8 h-[1px] bg-white/20" />
+            <div className="w-8 h-[1px] bg-border" />
           </motion.div>
         </motion.div>
 
@@ -98,19 +98,19 @@ export default function SplashScreen({ onComplete }: { onComplete: () => void })
           transition={{ duration: 0.5, delay: phase === 'loading' ? 0.8 : 0 }}
           className="w-full max-w-[240px] flex flex-col items-center gap-6"
         >
-          <div className="w-full h-[1px] bg-white/10 relative overflow-hidden">
+          <div className="w-full h-[1px] bg-border relative overflow-hidden">
              <motion.div 
-               className="absolute top-0 left-0 h-full bg-white shadow-[0_0_10px_rgba(255,255,255,0.8)]"
+               className="absolute top-0 left-0 h-full bg-primary shadow-sm"
                style={{ width: `${progress}%` }}
                transition={{ ease: "linear" }}
              />
           </div>
           
           <div className="flex justify-between w-full items-center">
-            <span className="text-[0.5625rem] font-black tracking-widest text-zinc-500 uppercase">
+            <span className="text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
               {progress < 30 ? 'Connexion' : progress < 70 ? 'Chargement' : 'Initialisation'}
             </span>
-            <span className="text-[0.625rem] font-black tracking-widest text-foreground font-mono opacity-80">
+            <span className="text-[10px] font-semibold tracking-widest text-foreground font-mono opacity-80">
               {Math.round(progress)}%
             </span>
           </div>
