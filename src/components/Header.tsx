@@ -4,9 +4,10 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import { Download, ChevronDown, Globe, MapPin, Search, LayoutGrid, Grid2x2, Flame, Lock, ShieldCheck, Tv, AlertCircle, Plus, Trash2, Link, FileUp, X as XIcon, BarChart2, Contrast, Menu, Play } from 'lucide-react';
+import { Settings as SettingsIcon, Download, ChevronDown, Globe, MapPin, Search, LayoutGrid, Grid2x2, Flame, Lock, ShieldCheck, Tv, AlertCircle, Plus, Trash2, Link, FileUp, X as XIcon, BarChart2, Contrast, Menu, Play } from 'lucide-react';
 import { PORTAL_SOURCES, PlaylistSource, getCustomPlaylists, saveCustomPlaylist, deleteCustomPlaylist } from '../constants/portal_data';
 import { useMediaQuery } from '../hooks/useMediaQuery';
+import { useNavigate } from "react-router-dom";
 import { Button } from '@/components/ui/button';
 import { PinCodeDialog } from './dialogs/PinCodeDialog';
 import { ImportPlaylistDialog } from './dialogs/ImportPlaylistDialog';
@@ -21,6 +22,7 @@ interface HeaderProps {
 }
 
 export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName, isSplitView, onToggleSplitView, onOpenStats }: HeaderProps) {
+  const navigate = useNavigate();
   const isMobileLandscape = useMediaQuery('(orientation: landscape) and (max-height: 500px)');
   
   const africaUrl = 'https://tvradiozap.eu/live/d/tvzaf.m3u';
@@ -200,6 +202,14 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
           </div>
 
           <div className="hidden lg:flex items-center gap-3">
+            <Button
+              variant="outline"
+              onClick={() => navigate("/settings")}
+              className="flex items-center justify-center w-10 h-10 rounded-xl text-muted-foreground hover:text-foreground"
+              title="Paramètres"
+            >
+              <SettingsIcon size={20} />
+            </Button>
             <Button
               variant={isSplitView ? "secondary" : "outline"}
               onClick={onToggleSplitView}

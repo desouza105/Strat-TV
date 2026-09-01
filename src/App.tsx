@@ -1,3 +1,8 @@
+import { Routes, Route, useLocation } from "react-router-dom";
+import { useGlobalPlayer } from "./context/GlobalPlayerContext";
+import { Settings } from "./pages/Settings";
+import { GlobalPlayer } from "./components/GlobalPlayer";
+
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -21,7 +26,7 @@ export default function App() {
   const isMobileLandscape = useMediaQuery('(orientation: landscape) and (max-height: 500px)');
   const [isLandscapeSidebarOpen, setIsLandscapeSidebarOpen] = useState(false);
   const [channels, setChannels] = useState<IPTVChannel[]>([]);
-  const [selectedChannel, setSelectedChannel] = useState<IPTVChannel | null>(null);
+  const { selectedChannel, setSelectedChannel, isSplitView, setIsSplitView, splitChannels, setSplitChannels, activeSplitIndex, setActiveSplitIndex } = useGlobalPlayer();
   const [currentPlaylistUrl, setCurrentPlaylistUrl] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,9 +40,6 @@ export default function App() {
   const [isStatsOpen, setIsStatsOpen] = useState(false);
 
   // Split View States
-  const [isSplitView, setIsSplitView] = useState(false);
-  const [splitChannels, setSplitChannels] = useState<IPTVChannel[]>([]);
-  const [activeSplitIndex, setActiveSplitIndex] = useState(0);
 
   // Sleep Timer States
   const [sleepTimerActive, setSleepTimerActive] = useState(false);
@@ -45,6 +47,8 @@ export default function App() {
   const [sleepTimerRemaining, setSleepTimerRemaining] = useState<number>(0);
   const sleepTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const loadRequestIdRef = useRef(0);
+  const location = useLocation();
+
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const startSleepTimer = useCallback((minutes: number) => {
@@ -404,174 +408,22 @@ export default function App() {
           )}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/5 blur-[120px] rounded-full pointer-events-none" />
 
-          <AnimatePresence mode="wait">
-            {isSplitView ? (
-              <motion.div 
-                key="split-view"
-                initial={{ opacity: 0, scale: 0.98 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.98 }}
-                transition={{ type: "spring", bounce: 0, duration: 0.5 }}
-                className={`grid gap-6 w-full max-w-7xl z-10 ${
-                  splitChannels.length <= 1 ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2'
-                }`}
-              >
-                {(splitChannels.length <= 2 ? Array.from({ length: Math.max(1, splitChannels.length) }, (_, i) => i) : [0, 1, 2, 3]).map((idx) => {
-                  const channel = splitChannels[idx];
-                  return (
-                    <div 
-                      key={idx}
-                      onClick={() => setActiveSplitIndex(idx)}
-                      className={`relative flex flex-col rounded-2xl overflow-hidden border-2 transition-all group ${
-                        activeSplitIndex === idx ? 'border-primary ring-4 ring-primary/10 shadow-2xl' : 'border-border'
-                      } ${!channel ? 'bg-card/50 border-dashed justify-center items-center cursor-pointer hover:bg-card' : 'bg-card'}`}
-                    >
-                      {channel ? (
-                        <>
-                          <div className="flex items-center justify-between p-3 bg-background/50 border-b border-border">
-                            <div className="flex items-center gap-2 max-w-[60%]">
-                              {channel.logo && (
-                                <img src={channel.logo} className="w-5 h-5 object-contain" referrerPolicy="no-referrer" />
-                              )}
-                              <span className="text-xs font-bold truncate uppercase">{channel.name}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <button 
-                                onClick={(e) => { e.stopPropagation(); expandSplitChannel(channel); }}
-                                className="p-1.5 hover:bg-muted-foreground/10 rounded-lg transition-colors text-muted-foreground hover:text-foreground"
-                                title="Agrandir"
-                              >
-                                <Maximize2 size={14} />
-                              </button>
-                              <button 
-                                onClick={(e) => { e.stopPropagation(); removeSplitChannel(idx); }}
-                                className="p-1.5 hover:bg-destructive/10 rounded-lg transition-colors text-destructive"
-                              >
-                                <X size={14} />
-                              </button>
-                            </div>
-                          </div>
-                          <div className="flex-1 min-h-0">
-                            <VideoPlayer 
-                              url={channel.url} 
-                              name={channel.name}
-                              onError={handlePlayerError}
-                            />
-                          </div>
-                        </>
-                      ) : (
-                        <div className="text-center p-6 space-y-3 opacity-40 group-hover:opacity-100 transition-opacity">
-                          <Grid2x2 className="w-10 h-10 mx-auto text-muted-foreground" />
-                          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Zone Libre</p>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </motion.div>
-            ) : selectedChannel ? (
-              <motion.div 
-                key={selectedChannel.url}
-                initial={{ opacity: 0, scale: 0.98 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.98 }}
-                transition={{ type: "spring", bounce: 0, duration: 0.5 }}
-                className="w-full max-w-6xl z-10"
-              >
-                {/* Sleep Timer UI */}
-                <AnimatePresence>
-                  {sleepTimerActive ? (
-                    <motion.div
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      className="w-full max-w-6xl z-20 mb-3 flex items-center justify-between bg-background/80 backdrop-blur-sm border border-border rounded-2xl px-4 py-3 shadow-sm"
-                    >
-                      <div className="flex items-center gap-3">
-                        <Timer size={16} className="text-foreground" />
-                        <span className="text-sm font-bold text-foreground uppercase tracking-wider">
-                          Arrêt dans
-                        </span>
-                        <span className="text-lg font-black text-foreground tabular-nums">
-                          {formatRemaining(sleepTimerRemaining)}
-                        </span>
-                      </div>
-                      <button
-                        onClick={cancelSleepTimer}
-                        className="flex items-center gap-2 text-xs font-bold text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-lg hover:bg-muted"
-                      >
-                        <XIcon size={14} /> Annuler
-                      </button>
-                    </motion.div>
-                  ) : null}
-                </AnimatePresence>
+          
+          <GlobalPlayer 
+            playlistName={playlistName}
+            error={error}
+            sleepTimerActive={sleepTimerActive}
+            sleepTimerRemaining={sleepTimerRemaining}
+            formatRemaining={formatRemaining}
+            cancelSleepTimer={cancelSleepTimer}
+            startSleepTimer={startSleepTimer}
+            handlePlayerError={handlePlayerError}
+          />
+          <Routes>
+            <Route path="/" element={<div />} />
+            <Route path="/settings" element={<Settings />} />
+          </Routes>
 
-                <VideoPlayer 
-                  ref={playerRef}
-                  url={selectedChannel.url} 
-                  name={selectedChannel.name}
-                  onError={handlePlayerError}
-                  onStartSleepTimer={startSleepTimer}
-                  sleepTimerActive={sleepTimerActive}
-                />
-                
-                <div className="mt-8 flex flex-col md:flex-row md:items-end justify-between gap-6">
-                  <div>
-                    <h2 className="text-3xl md:text-5xl font-bold mb-2 tracking-tighter uppercase text-foreground">
-                      {selectedChannel.name}
-                    </h2>
-                    <div className="flex items-center gap-4 text-sm font-bold text-muted-foreground uppercase tracking-widest">
-                       <span className="flex items-center gap-2 text-primary"><Globe size={14} /> DIRECT</span>
-                       <span className="w-1.5 h-1.5 rounded-full bg-border" />
-                       <span className="flex items-center gap-2"><MapPin size={14} className="text-muted-foreground" /> {playlistName || 'INTERNATIONAL'}</span>
-                       <span className="w-1.5 h-1.5 rounded-full bg-border" />
-                       <span className="text-muted-foreground">{selectedChannel.group || 'GÉNERAL'}</span>
-                    </div>
-                  </div>
-                  
-                  <div className="flex gap-2">
-                    <button className="bg-card hover:bg-muted px-6 py-2 rounded-xl text-sm font-bold text-foreground transition-all active:scale-95">
-                      REPORT
-                    </button>
-                    <button className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-2 rounded-xl text-sm font-bold transition-all active:scale-95 shadow-lg">
-                      LIVE
-                    </button>
-                  </div>
-                </div>
-              </motion.div>
-            ) : (
-              <motion.div 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ type: "spring", bounce: 0, duration: 0.6 }}
-                className="text-center max-w-md z-10"
-              >
-                {error ? (
-                  <div className="space-y-6">
-                    <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mx-auto border border-border">
-                      <WifiOff className="text-muted-foreground w-10 h-10" />
-                    </div>
-                    <div className="space-y-2">
-                      <h3 className="text-2xl font-bold uppercase text-foreground tracking-tight">Erreur de lecture</h3>
-                      <p className="text-muted-foreground leading-relaxed text-sm">{error}</p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-8">
-                    <div className="space-y-4">
-                      <h3 className="text-3xl md:text-5xl font-normal tracking-tighter text-foreground">
-                        Moody<span className="font-serif italic text-muted-foreground/50">.</span>
-                      </h3>
-                      <p className="text-muted-foreground text-base md:text-lg leading-relaxed max-w-sm mx-auto font-light">
-                        Choisissez un pays ou une catégorie dans le menu supérieur pour{' '}
-                        <span className="font-serif italic text-foreground tracking-wide font-normal">accéder à vos chaînes préférées</span>.
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
         </section>
       </main>
 

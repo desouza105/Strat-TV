@@ -312,9 +312,6 @@ export default function Sidebar({
               LIVE <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
             </span>
           </div>
-          <div className="text-[10px] text-muted-foreground/60 text-center border-t border-border/50 pt-2 flex items-center justify-center gap-1.5 transition-opacity">
-            Accès facilité par le Facilitateur
-          </div>
         </div>
       </aside>
     </>

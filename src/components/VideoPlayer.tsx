@@ -6,6 +6,7 @@
 import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import Hls from 'hls.js';
 import { Play, Pause, Volume2, VolumeX, Maximize, Loader2, AlertCircle, PictureInPicture2, Settings, Timer, Captions, CaptionsOff, Check, Cast } from 'lucide-react';
+import { useSettings } from "../context/SettingsContext";
 import { motion, AnimatePresence } from 'motion/react';
 
 interface AudioTrack {
@@ -27,6 +28,7 @@ interface VideoPlayerProps {
   onError?: (error: string) => void;
   onStartSleepTimer?: (minutes: number) => void;
   sleepTimerActive?: boolean;
+  miniPlayer?: boolean;
 }
 
 export interface VideoPlayerRef {
@@ -36,12 +38,13 @@ export interface VideoPlayerRef {
   setVolume: (value: number) => void;
 }
 
-const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, onError, onStartSleepTimer, sleepTimerActive }, ref) => {
+const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, onError, onStartSleepTimer, sleepTimerActive, miniPlayer = false }, ref) => {
+  const { settings, updateSetting } = useSettings();
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
-  const [volume, setVolume] = useState(1);
+  const [isMuted, setIsMuted] = useState(!settings.startWithSound);
+  const [volume, setVolume] = useState(settings.rememberVolume ? settings.lastVolume : 1);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isPipAvailable, setIsPipAvailable] = useState(false);
@@ -113,6 +116,12 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
   }));
 
   useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.volume = volume;
+    }
+  }, [volume]);
+
+  useEffect(() => {
     setIsPipAvailable(
       typeof document !== 'undefined' && 
       document.pictureInPictureEnabled && 
@@ -182,7 +191,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
 
     const handleLoadedMetadata = () => {
       setIsLoading(false);
-      safePlay();
+      if (settings.autoplay) safePlay();
     };
 
     const handleVideoError = () => {
@@ -239,7 +248,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
           setSubtitleTracks([]);
         }
 
-        safePlay();
+        if (settings.autoplay) safePlay();
       });
 
       hls.on(Hls.Events.LEVEL_SWITCHED, (_event, data) => {
@@ -345,7 +354,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
   const togglePlay = () => {
     if (videoRef.current) {
       if (videoRef.current.paused) {
-        safePlay();
+        if (settings.autoplay) safePlay();
       } else {
         videoRef.current.pause();
         setIsPlaying(false);
@@ -367,6 +376,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseFloat(e.target.value);
     setVolume(value);
+    if (settings.rememberVolume) updateSetting("lastVolume", value);
     if (videoRef.current) {
       videoRef.current.volume = value;
       const newMuted = value === 0;
@@ -436,8 +446,16 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
 
   return (
     <div className="relative w-full aspect-video bg-black group overflow-hidden rounded-xl shadow-2xl">
+      {castState === "connected" && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 z-10 p-6 text-center">
+          <Cast className="w-16 h-16 text-primary mb-4 animate-pulse" />
+          <h3 className="text-xl font-bold text-foreground mb-2">Diffusion active</h3>
+          <p className="text-muted-foreground max-w-md">La vidéo est en cours de lecture sur un autre écran.</p>
+        </div>
+      )}
       <video
         ref={videoRef}
+        muted={isMuted}
         className="w-full h-full object-contain"
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
@@ -510,6 +528,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
       )}
 
       {/* Custom Controls */}
+      {!miniPlayer && settings.showControls && (
       <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between">
@@ -594,7 +613,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                 </div>
               )}
 
-              {isPipAvailable && (
+              {isPipAvailable && settings.pipEnabled && (
                 <button 
                   onClick={togglePip}
                   className="p-2 flex items-center justify-center min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 hover:bg-white/20 rounded-full transition-colors text-foreground"
@@ -777,6 +796,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 });
