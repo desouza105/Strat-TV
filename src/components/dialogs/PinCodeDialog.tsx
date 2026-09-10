@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ShieldCheck, Lock, AlertCircle } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -63,21 +63,18 @@ export function PinCodeDialog({ isOpen, onOpenChange, onSuccess, title, descript
                   setInput(e.target.value);
                   setError(false);
                 }}
-                className={`h-14 text-center text-2xl tracking-[0.3em] bg-background border-2 ${error ? 'border-destructive text-destructive' : 'border-input focus-visible:ring-1 focus-visible:ring-primary'} rounded-xl`}
+                className={cn("h-14 text-center text-2xl tracking-[0.3em] bg-background border-2 rounded-xl", error ? "border-destructive text-destructive" : "border-input focus-visible:ring-1 focus-visible:ring-primary")}
               />
               
               <div className="h-5 flex items-center justify-center">
-                <AnimatePresence mode="wait">
-                  {error && (
-                    <motion.div 
-                      initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }}
-                      className="flex items-center gap-1.5 text-destructive"
+                {error && (
+                    <div 
+                      className="flex items-center gap-1.5 text-destructive animate-in fade-in slide-in-from-top-2 duration-200"
                     >
                       <AlertCircle size={14} />
                       <span className="text-xs font-semibold uppercase tracking-wider">Code invalide</span>
-                    </motion.div>
+                    </div>
                   )}
-                </AnimatePresence>
               </div>
             </div>
 

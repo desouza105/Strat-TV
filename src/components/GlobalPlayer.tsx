@@ -1,10 +1,9 @@
 import React, { useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { cn } from '@/lib/utils';
 import { Maximize2, X, Timer, X as XIcon, Globe, MapPin, Grid2x2, WifiOff } from 'lucide-react';
 import VideoPlayer, { VideoPlayerRef } from './VideoPlayer';
 import { useGlobalPlayer } from '../context/GlobalPlayerContext';
-import { useSettings } from '../context/SettingsContext';
-import { useLocation, useNavigate } from 'react-router-dom';
+
 import { IPTVChannel } from '../types/iptv';
 
 interface GlobalPlayerProps {
@@ -28,20 +27,8 @@ export const GlobalPlayer = ({
     setSplitChannels, closePlayer
   } = useGlobalPlayer();
   
-  const { settings } = useSettings();
-  const location = useLocation();
-  const navigate = useNavigate();
   const playerRef = useRef<VideoPlayerRef>(null);
 
-  useEffect(() => {
-    if ((selectedChannel || isSplitView) && settings.autoMiniPlayer) {
-      if (location.pathname !== '/') {
-        setIsMiniPlayer(true);
-      } else {
-        setIsMiniPlayer(false);
-      }
-    }
-  }, [location.pathname, selectedChannel, isSplitView, settings.autoMiniPlayer, setIsMiniPlayer]);
 
   const expandSplitChannel = (channel: IPTVChannel) => {
     // Logic to expand split channel
@@ -59,14 +46,8 @@ export const GlobalPlayer = ({
   };
 
   if (!selectedChannel && !isSplitView) {
-    if (location.pathname === '/') {
-      return (
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ type: "spring", bounce: 0, duration: 0.6 }}
-          className="text-center max-w-md z-10"
-        >
+    return (
+      <div className="text-center max-w-md z-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
           {error ? (
             <div className="space-y-6">
               <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mx-auto border border-border">
@@ -90,10 +71,8 @@ export const GlobalPlayer = ({
               </div>
             </div>
           )}
-        </motion.div>
-      );
-    }
-    return null;
+      </div>
+    );
   }
 
   if (isMiniPlayer) {
@@ -102,13 +81,7 @@ export const GlobalPlayer = ({
     if (!channel) return null;
     
     return (
-      <motion.div
-        initial={{ opacity: 0, y: 50, scale: 0.9 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: 50, scale: 0.9 }}
-        className="fixed bottom-20 right-4 md:bottom-4 md:right-4 w-[320px] rounded-xl overflow-hidden shadow-2xl z-50 bg-black border border-border"
-        style={{ aspectRatio: '16/9' }}
-      >
+      <div className="fixed bottom-20 right-4 md:bottom-4 md:right-4 w-[320px] rounded-xl overflow-hidden shadow-2xl z-50 bg-black border border-border animate-in fade-in slide-in-from-bottom-8 zoom-in-95 duration-300" style={{ aspectRatio: "16/9" }}>
         <div className="absolute top-0 left-0 w-full h-full group">
           <VideoPlayer
             ref={playerRef}
@@ -120,7 +93,7 @@ export const GlobalPlayer = ({
              <div className="flex justify-between items-start p-2 pointer-events-auto">
                <span className="text-xs font-bold truncate px-2 py-1 bg-black/50 rounded">{channel.name}</span>
                <div className="flex gap-1">
-                 <button onClick={(e) => { e.stopPropagation(); setIsMiniPlayer(false); navigate('/'); }} className="p-1.5 bg-black/50 hover:bg-white/20 rounded-lg transition-colors text-white">
+                 <button onClick={(e) => { e.stopPropagation(); setIsMiniPlayer(false); }} className="p-1.5 bg-black/50 hover:bg-white/20 rounded-lg transition-colors text-white">
                    <Maximize2 size={14} />
                  </button>
                  <button onClick={(e) => { e.stopPropagation(); closePlayer(); }} className="p-1.5 bg-black/50 hover:bg-red-500/80 rounded-lg transition-colors text-white">
@@ -130,23 +103,15 @@ export const GlobalPlayer = ({
              </div>
           </div>
         </div>
-      </motion.div>
+      </div>
     );
   }
 
   // Full player
   return (
-    <AnimatePresence mode="wait">
+    <>
       {isSplitView ? (
-        <motion.div 
-          key="split-view"
-          initial={{ opacity: 0, scale: 0.98 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.98 }}
-          transition={{ type: "spring", bounce: 0, duration: 0.5 }}
-          className={`grid gap-6 w-full max-w-7xl z-10 ${
-            splitChannels.length <= 1 ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2'
-          }`}
+        <div className={cn("grid gap-6 w-full max-w-7xl z-10 animate-in fade-in zoom-in-[0.98] duration-500", splitChannels.length <= 1 ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2")}
         >
           {(splitChannels.length <= 2 ? Array.from({ length: Math.max(1, splitChannels.length) }, (_, i) => i) : [0, 1, 2, 3]).map((idx) => {
             const channel = splitChannels[idx];
@@ -154,9 +119,7 @@ export const GlobalPlayer = ({
               <div 
                 key={idx}
                 onClick={() => setActiveSplitIndex(idx)}
-                className={`relative flex flex-col rounded-2xl overflow-hidden border-2 transition-all group ${
-                  activeSplitIndex === idx ? 'border-primary ring-4 ring-primary/10 shadow-2xl' : 'border-border'
-                } ${!channel ? 'bg-card/50 border-dashed justify-center items-center cursor-pointer hover:bg-card' : 'bg-card'}`}
+                className={cn("relative flex flex-col rounded-2xl overflow-hidden border-2 transition-all group", activeSplitIndex === idx ? "border-primary ring-4 ring-primary/10 shadow-2xl" : "border-border", !channel ? "bg-card/50 border-dashed justify-center items-center cursor-pointer hover:bg-card" : "bg-card")}
               >
                 {channel ? (
                   <>
@@ -201,25 +164,12 @@ export const GlobalPlayer = ({
               </div>
             );
           })}
-        </motion.div>
+        </div>
       ) : selectedChannel ? (
-        <motion.div 
-          key={selectedChannel.url}
-          initial={{ opacity: 0, scale: 0.98 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.98 }}
-          transition={{ type: "spring", bounce: 0, duration: 0.5 }}
-          className="w-full max-w-6xl z-10"
-        >
+        <div key={selectedChannel.url} className="w-full max-w-6xl z-10 animate-in fade-in zoom-in-[0.98] duration-500">
           {/* Sleep Timer UI */}
-          <AnimatePresence>
-            {sleepTimerActive ? (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="w-full max-w-6xl z-20 mb-3 flex items-center justify-between bg-background/80 backdrop-blur-sm border border-border rounded-2xl px-4 py-3 shadow-sm"
-              >
+          {sleepTimerActive ? (
+              <div className="w-full max-w-6xl z-20 mb-3 flex items-center justify-between bg-background/80 backdrop-blur-sm border border-border rounded-2xl px-4 py-3 shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
                 <div className="flex items-center gap-3">
                   <Timer size={16} className="text-foreground" />
                   <span className="text-sm font-bold text-foreground uppercase tracking-wider">
@@ -235,9 +185,9 @@ export const GlobalPlayer = ({
                 >
                   <XIcon size={14} /> Annuler
                 </button>
-              </motion.div>
+              </div>
             ) : null}
-          </AnimatePresence>
+          
           <VideoPlayer 
             ref={playerRef}
             url={selectedChannel.url} 
@@ -271,8 +221,8 @@ export const GlobalPlayer = ({
               </button>
             </div>
           </div>
-        </motion.div>
+        </div>
       ) : null}
-    </AnimatePresence>
+    </>
   );
 };

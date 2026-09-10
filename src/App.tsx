@@ -1,6 +1,5 @@
-import { Routes, Route, useLocation } from "react-router-dom";
+
 import { useGlobalPlayer } from "./context/GlobalPlayerContext";
-import { Settings } from "./pages/Settings";
 import { GlobalPlayer } from "./components/GlobalPlayer";
 
 /**
@@ -18,6 +17,7 @@ import { parseM3U } from './utils/m3uParser';
 import { PORTAL_SOURCES } from './constants/portal_data';
 import { Tv, WifiOff, Globe, Sparkles, MapPin, Grid2x2, X, Maximize2, Timer, X as XIcon, Menu } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { cn } from '@/lib/utils';
 import { addSession, WatchSession } from './utils/watchStats';
 import StatsModal from './components/StatsModal';
 import { useMediaQuery } from './hooks/useMediaQuery';
@@ -47,7 +47,6 @@ export default function App() {
   const [sleepTimerRemaining, setSleepTimerRemaining] = useState<number>(0);
   const sleepTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const loadRequestIdRef = useRef(0);
-  const location = useLocation();
 
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -396,7 +395,7 @@ export default function App() {
           onClose={() => setIsLandscapeSidebarOpen(false)}
         />
 
-        <section className={`flex-1 flex flex-col items-center justify-center p-4 md:p-8 bg-background relative overflow-y-auto custom-scrollbar transition-colors duration-300 order-1 md:order-2 ${isMobileLandscape ? 'min-h-0' : 'min-h-[50vh]'}`}>
+        <section className={cn("flex-1 flex flex-col items-center justify-center p-4 md:p-8 bg-background relative overflow-y-auto custom-scrollbar transition-colors duration-300 order-1 md:order-2", isMobileLandscape ? "min-h-0" : "min-h-[50vh]")}>
           {isMobileLandscape && (
              <button 
                onClick={() => setIsLandscapeSidebarOpen(true)}
@@ -419,10 +418,6 @@ export default function App() {
             startSleepTimer={startSleepTimer}
             handlePlayerError={handlePlayerError}
           />
-          <Routes>
-            <Route path="/" element={<div />} />
-            <Route path="/settings" element={<Settings />} />
-          </Routes>
 
         </section>
       </main>

@@ -6,8 +6,8 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Search, Tv, Filter, MapPin, X } from 'lucide-react';
 import { IPTVChannel } from '../types/iptv';
-import { motion, AnimatePresence } from 'motion/react';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 interface SidebarProps {
   channels: IPTVChannel[];
@@ -179,11 +179,11 @@ export default function Sidebar({
         />
       )}
       <aside 
-        className={`bg-card flex flex-col overflow-hidden transition-all duration-300 ${
+        className={cn("bg-card flex flex-col overflow-hidden transition-all duration-300", 
           isMobileLandscape 
             ? `fixed inset-y-0 left-0 z-50 w-80 h-full border-r border-border ${isOpen ? 'translate-x-0' : '-translate-x-full'}`
             : 'w-full md:w-80 h-[45vh] md:h-full border-t md:border-t-0 md:border-r border-border order-2 md:order-1'
-        }`}
+        )}
       >
         {isMobileLandscape && (
           <Button 
@@ -196,7 +196,7 @@ export default function Sidebar({
             <X size={18} />
           </Button>
         )}
-        <div className={`p-4 border-b border-border space-y-4 ${isMobileLandscape ? 'pt-12' : ''}`}>
+        <div className={cn("p-4 border-b border-border space-y-4", isMobileLandscape && "pt-12")}>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
             <input
@@ -216,11 +216,11 @@ export default function Sidebar({
             </div>
             <button 
               onClick={() => setShowOnlyWorking(!showOnlyWorking)}
-              className={`text-[10px] font-bold px-2 py-0.5 rounded transition-colors uppercase tracking-widest ${
+              className={cn("text-[10px] font-bold px-2 py-0.5 rounded transition-colors uppercase tracking-widest", 
                 showOnlyWorking 
                   ? 'bg-primary text-primary-foreground' 
                   : 'bg-muted text-muted-foreground hover:bg-secondary'
-              }`}
+              )}
             >
               {showOnlyWorking ? 'ON' : 'OFF'}
             </button>
@@ -235,26 +235,23 @@ export default function Sidebar({
             </div>
           ) : filteredChannels.length > 0 ? (
             <div className="flex flex-col gap-1" onKeyDown={handleListKeyDown}>
-              <AnimatePresence initial={false}>
                 {filteredChannels.map((channel, idx) => {
                   const status = channelStatus[channel.url] || 'checking';
                   const isSelected = selectedChannel?.url === channel.url;
                   
                   return (
-                    <motion.button
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: Math.min(idx * 0.02, 1), type: "spring", bounce: 0, duration: 0.4 }}
+                    <button
+                      style={{ animationFillMode: "both", animationDelay: `${Math.min(idx * 20, 1000)}ms` }}
                       key={channel.id + idx}
                       id={`channel-btn-${idx}`}
                       tabIndex={focusedIndex === idx ? 0 : -1}
                       onFocus={() => setFocusedIndex(idx)}
                       onClick={() => onChannelSelect(channel)}
-                      className={`flex items-center gap-3 p-2 rounded-xl transition-all text-left group focus:outline-none focus-visible:ring-1 focus-visible:ring-primary ${
+                      className={cn("animate-in fade-in slide-in-from-left-2 duration-300 flex items-center gap-3 p-2 rounded-xl transition-all text-left group focus:outline-none focus-visible:ring-1 focus-visible:ring-primary", 
                         isSelected
                           ? 'bg-primary/10 text-primary'
                           : 'hover:bg-secondary text-muted-foreground hover:text-foreground'
-                      }`}
+                      )}
                     >
                       <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center relative bg-background rounded-lg border border-border shadow-sm overflow-hidden">
                         {channel.logo ? (
@@ -273,13 +270,13 @@ export default function Sidebar({
                         )}
                         
                         {/* Health Indicator */}
-                        <div className={`absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full border-[2px] border-background ${
+                        <div className={cn("absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full border-[2px] border-background", 
                           status === 'active' ? 'bg-green-500' : 
                           status === 'dead' ? 'bg-destructive' : 'bg-yellow-500 animate-pulse'
-                        }`} />
+                        )} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className={`text-sm font-semibold truncate transition-colors ${isSelected ? 'text-foreground' : 'group-hover:text-foreground'}`}>
+                        <p className={cn("text-sm font-semibold truncate transition-colors", isSelected ? "text-foreground" : "group-hover:text-foreground")}>
                           {channel.name}
                         </p>
                         <p className="text-[10px] font-medium text-muted-foreground truncate uppercase tracking-wider">
@@ -289,10 +286,10 @@ export default function Sidebar({
                       {isSelected && (
                         <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
                       )}
-                    </motion.button>
+                    </button>
                   );
                 })}
-              </AnimatePresence>
+              
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center h-40 text-center px-6">

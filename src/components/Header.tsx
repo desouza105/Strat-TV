@@ -4,11 +4,12 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import { Settings as SettingsIcon, Download, ChevronDown, Globe, MapPin, Search, LayoutGrid, Grid2x2, Flame, Lock, ShieldCheck, Tv, AlertCircle, Plus, Trash2, Link, FileUp, X as XIcon, BarChart2, Contrast, Menu, Play } from 'lucide-react';
+import { Download, ChevronDown, Globe, MapPin, Search, LayoutGrid, Grid2x2, Flame, Lock, ShieldCheck, Tv, AlertCircle, Plus, Trash2, Link, FileUp, X as XIcon, BarChart2, Contrast, Menu, Play } from 'lucide-react';
 import { PORTAL_SOURCES, PlaylistSource, getCustomPlaylists, saveCustomPlaylist, deleteCustomPlaylist } from '../constants/portal_data';
 import { useMediaQuery } from '../hooks/useMediaQuery';
-import { useNavigate } from "react-router-dom";
+
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import { PinCodeDialog } from './dialogs/PinCodeDialog';
 import { ImportPlaylistDialog } from './dialogs/ImportPlaylistDialog';
 
@@ -22,7 +23,7 @@ interface HeaderProps {
 }
 
 export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName, isSplitView, onToggleSplitView, onOpenStats }: HeaderProps) {
-  const navigate = useNavigate();
+  
   const isMobileLandscape = useMediaQuery('(orientation: landscape) and (max-height: 500px)');
   
   const africaUrl = 'https://tvradiozap.eu/live/d/tvzaf.m3u';
@@ -104,7 +105,7 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
 
   return (
     <>
-      <header className={`${isMobileLandscape ? 'h-10' : 'h-16 md:h-16'} bg-background/80 backdrop-blur-md border-b border-border px-4 md:px-6 flex items-center justify-between sticky top-0 z-50 transition-colors duration-300`}>
+      <header className={cn("bg-background/80 backdrop-blur-md border-b border-border px-4 md:px-6 flex items-center justify-between sticky top-0 z-50 transition-colors duration-300", isMobileLandscape ? "h-10" : "h-16 md:h-16")}>
         <div className="flex items-center gap-6">
           <div className="hidden lg:flex items-center gap-2">
             <div className="relative">
@@ -115,7 +116,7 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
               >
                 <MapPin size={16} className="text-muted-foreground" />
                 COUNTRY
-                <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${isPortalOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown className={cn("w-4 h-4 text-muted-foreground transition-transform", isPortalOpen && "rotate-180")} />
               </Button>
             </div>
 
@@ -167,7 +168,7 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
               variant={isAdultActive ? "destructive" : "ghost"}
               onClick={() => setIsPasscodeOpen(true)}
               disabled={isLoading}
-              className={`flex items-center gap-2 rounded-xl text-xs px-4 h-10 font-semibold ${!isAdultActive && 'hover:text-destructive hover:bg-destructive/10'}`}
+              className={cn("flex items-center gap-2 rounded-xl text-xs px-4 h-10 font-semibold", !isAdultActive && "hover:text-destructive hover:bg-destructive/10")}
             >
               <Flame size={16} />
               XXX ADULT
@@ -196,20 +197,12 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
             <Button variant={isRegionalActive ? "secondary" : "ghost"} size="icon" onClick={() => onLoadPlaylist(regionalUrl)} disabled={isLoading} className="h-10 w-10 shrink-0 rounded-xl">
               <LayoutGrid size={20} className={isRegionalActive ? 'text-foreground' : 'text-muted-foreground'} />
             </Button>
-            <Button variant={isAdultActive ? "destructive" : "ghost"} size="icon" onClick={() => setIsPasscodeOpen(true)} disabled={isLoading} className={`h-10 w-10 shrink-0 rounded-xl ${!isAdultActive && 'hover:bg-destructive/10 hover:text-destructive'}`}>
+            <Button variant={isAdultActive ? "destructive" : "ghost"} size="icon" onClick={() => setIsPasscodeOpen(true)} disabled={isLoading} className={cn("h-10 w-10 shrink-0 rounded-xl", !isAdultActive && "hover:bg-destructive/10 hover:text-destructive")}>
               <Flame size={20} className={isAdultActive ? 'text-foreground' : 'text-muted-foreground'} />
             </Button>
           </div>
 
           <div className="hidden lg:flex items-center gap-3">
-            <Button
-              variant="outline"
-              onClick={() => navigate("/settings")}
-              className="flex items-center justify-center w-10 h-10 rounded-xl text-muted-foreground hover:text-foreground"
-              title="Paramètres"
-            >
-              <SettingsIcon size={20} />
-            </Button>
             <Button
               variant={isSplitView ? "secondary" : "outline"}
               onClick={onToggleSplitView}

@@ -6,8 +6,7 @@
 import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import Hls from 'hls.js';
 import { Play, Pause, Volume2, VolumeX, Maximize, Loader2, AlertCircle, PictureInPicture2, Settings, Timer, Captions, CaptionsOff, Check, Cast } from 'lucide-react';
-import { useSettings } from "../context/SettingsContext";
-import { motion, AnimatePresence } from 'motion/react';
+import { cn } from '@/lib/utils';
 
 interface AudioTrack {
   id: number;
@@ -39,12 +38,11 @@ export interface VideoPlayerRef {
 }
 
 const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, onError, onStartSleepTimer, sleepTimerActive, miniPlayer = false }, ref) => {
-  const { settings, updateSetting } = useSettings();
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isMuted, setIsMuted] = useState(!settings.startWithSound);
-  const [volume, setVolume] = useState(settings.rememberVolume ? settings.lastVolume : 1);
+  const [isMuted, setIsMuted] = useState(false);
+  const [volume, setVolume] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isPipAvailable, setIsPipAvailable] = useState(false);
@@ -191,7 +189,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
 
     const handleLoadedMetadata = () => {
       setIsLoading(false);
-      if (settings.autoplay) safePlay();
+      safePlay();
     };
 
     const handleVideoError = () => {
@@ -248,7 +246,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
           setSubtitleTracks([]);
         }
 
-        if (settings.autoplay) safePlay();
+        safePlay();
       });
 
       hls.on(Hls.Events.LEVEL_SWITCHED, (_event, data) => {
@@ -354,7 +352,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
   const togglePlay = () => {
     if (videoRef.current) {
       if (videoRef.current.paused) {
-        if (settings.autoplay) safePlay();
+        safePlay();
       } else {
         videoRef.current.pause();
         setIsPlaying(false);
@@ -376,7 +374,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseFloat(e.target.value);
     setVolume(value);
-    if (settings.rememberVolume) updateSetting("lastVolume", value);
+    
     if (videoRef.current) {
       videoRef.current.volume = value;
       const newMuted = value === 0;
@@ -528,7 +526,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
       )}
 
       {/* Custom Controls */}
-      {!miniPlayer && settings.showControls && (
+      {!miniPlayer && (
       <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between">
@@ -574,26 +572,20 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                     className="flex items-center justify-center gap-1.5 px-3 py-1.5 min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 hover:bg-white/20 rounded-lg transition-colors text-foreground text-[10px] font-semibold uppercase tracking-widest border border-white/20"
                     aria-label="Paramètres de qualité"
                   >
-                    <Settings className={`w-3.5 h-3.5 ${isQualityOpen ? 'animate-spin-slow' : ''}`} />
+                    <Settings className={cn("w-3.5 h-3.5", isQualityOpen && "animate-spin-slow")} />
                     {currentLevel === -1 ? 'AUTO' : `${levels.find(l => l.index === currentLevel)?.height || ''}P`}
                   </button>
 
-                  <AnimatePresence>
+                  
                     {isQualityOpen && (
-                      <motion.div 
-                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                        transition={{ type: "spring", bounce: 0, duration: 0.4 }}
-                        className="absolute bottom-full right-0 mb-2 w-32 bg-background border border-border rounded-xl shadow-2xl overflow-hidden z-50"
-                      >
+                      <div className="absolute bottom-full right-0 mb-2 w-32 bg-background border border-border rounded-xl shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 zoom-in-95 duration-150">
                         <div className="p-1.5 uppercase text-[10px] font-semibold text-muted-foreground border-b border-border text-center bg-muted/50">
                           Qualité
                         </div>
                         <div className="max-h-48 overflow-y-auto custom-scrollbar">
                           <button
                             onClick={() => changeQuality(-1)}
-                            className={`w-full px-4 py-2 text-left text-xs font-semibold transition-colors ${currentLevel === -1 ? 'bg-primary/10 text-primary' : 'text-foreground hover:bg-muted'}`}
+                            className={cn("w-full px-4 py-2 text-left text-xs font-semibold transition-colors", currentLevel === -1 ? "bg-primary/10 text-primary" : "text-foreground hover:bg-muted")}
                           >
                             AUTO
                           </button>
@@ -601,19 +593,19 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                             <button
                               key={level.index}
                               onClick={() => changeQuality(level.index)}
-                              className={`w-full px-4 py-2 text-left text-xs font-semibold transition-colors ${currentLevel === level.index ? 'bg-primary/10 text-primary' : 'text-foreground hover:bg-muted'}`}
+                              className={cn("w-full px-4 py-2 text-left text-xs font-semibold transition-colors", currentLevel === level.index ? "bg-primary/10 text-primary" : "text-foreground hover:bg-muted")}
                             >
                               {level.height}P
                             </button>
                           ))}
                         </div>
-                      </motion.div>
+                      </div>
                     )}
-                  </AnimatePresence>
+                  
                 </div>
               )}
 
-              {isPipAvailable && settings.pipEnabled && (
+              {isPipAvailable && (
                 <button 
                   onClick={togglePip}
                   className="p-2 flex items-center justify-center min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 hover:bg-white/20 rounded-full transition-colors text-foreground"
@@ -627,11 +619,11 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
               {isCastAvailable && (
                 <button 
                   onClick={toggleCast}
-                  className={`p-2 flex items-center justify-center min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 hover:bg-white/20 rounded-full transition-colors ${castState === 'connected' ? 'text-primary' : 'text-foreground'}`}
+                  className={cn("p-2 flex items-center justify-center min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 hover:bg-white/20 rounded-full transition-colors", castState === "connected" ? "text-primary" : "text-foreground")}
                   title="Diffuser"
                   aria-label="Diffuser sur un autre appareil"
                 >
-                  <Cast className={`w-5 h-5 ${castState === 'connected' ? 'fill-current' : ''}`} />
+                  <Cast className={cn("w-5 h-5", castState === "connected" && "fill-current")} />
                 </button>
               )}
 
@@ -639,23 +631,18 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                 <div className="relative">
                   <button
                     onClick={() => setShowTracksMenu(!showTracksMenu)}
-                    className={`p-2 min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 flex items-center justify-center rounded-lg transition-all hover:bg-muted ${showTracksMenu ? 'text-foreground bg-muted' : 'text-muted-foreground'}`}
+                    className={cn("p-2 min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 flex items-center justify-center rounded-lg transition-all hover:bg-muted", showTracksMenu ? "text-foreground bg-muted" : "text-muted-foreground")}
                     title="Pistes audio / Sous-titres"
                     aria-label="Pistes audio et sous-titres"
                   >
                     <Captions size={18} />
                   </button>
                   
-                  <AnimatePresence>
+                  
                     {showTracksMenu && (
                       <>
                         <div className="fixed inset-0 z-10" onClick={() => setShowTracksMenu(false)} />
-                        <motion.div
-                          initial={{ opacity: 0, scale: 0.9, y: 5 }}
-                          animate={{ opacity: 1, scale: 1, y: 0 }}
-                          exit={{ opacity: 0, scale: 0.9, y: 5 }}
-                          className="absolute bottom-full right-0 mb-2 bg-background border border-border rounded-xl p-3 z-20 min-w-[200px] shadow-2xl"
-                        >
+                        <div className="absolute bottom-full right-0 mb-2 bg-background border border-border rounded-xl p-3 z-20 min-w-[200px] shadow-2xl animate-in fade-in slide-in-from-bottom-2 zoom-in-95 duration-150">
                           {/* Pistes audio */}
                           {audioTracks.length > 1 && (
                             <div className="mb-3">
@@ -666,7 +653,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                                 <button
                                   key={track.id}
                                   onClick={() => handleAudioChange(track.id)}
-                                  className={`flex items-center justify-between w-full px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${activeAudio === track.id ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}`}
+                                  className={cn("flex items-center justify-between w-full px-3 py-2 rounded-lg text-xs font-semibold transition-colors", activeAudio === track.id ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground")}
                                 >
                                   <span className="flex items-center gap-2">
                                     <Volume2 size={14} />
@@ -699,7 +686,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                               
                               <button
                                 onClick={() => handleSubtitleChange(-1)}
-                                className={`flex items-center justify-between w-full px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${activeSubtitle === -1 ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}`}
+                                className={cn("flex items-center justify-between w-full px-3 py-2 rounded-lg text-xs font-semibold transition-colors", activeSubtitle === -1 ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground")}
                               >
                                 <span className="flex items-center gap-2">
                                   <CaptionsOff size={14} />
@@ -714,7 +701,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                                 <button
                                   key={track.id}
                                   onClick={() => handleSubtitleChange(track.id)}
-                                  className={`flex items-center justify-between w-full px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${activeSubtitle === track.id ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}`}
+                                  className={cn("flex items-center justify-between w-full px-3 py-2 rounded-lg text-xs font-semibold transition-colors", activeSubtitle === track.id ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground")}
                                 >
                                   <span className="flex items-center gap-2">
                                     <Captions size={14} />
@@ -734,33 +721,28 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                               ))}
                             </div>
                           )}
-                        </motion.div>
+                        </div>
                       </>
                     )}
-                  </AnimatePresence>
+                  
                 </div>
               )}
 
               <div className="relative">
                 <button
                   onClick={() => setShowSleepMenu(!showSleepMenu)}
-                  className={`p-2 min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 flex items-center justify-center rounded-lg transition-all hover:bg-white/10 ${sleepTimerActive ? 'text-primary' : 'text-muted-foreground'}`}
+                  className={cn("p-2 min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 flex items-center justify-center rounded-lg transition-all hover:bg-white/10", sleepTimerActive ? "text-primary" : "text-muted-foreground")}
                   title="Sleep Timer"
                   aria-label="Minuteur de mise en veille"
                 >
                   <Timer size={18} />
                 </button>
                 
-                <AnimatePresence>
+                
                   {showSleepMenu && (
                     <>
                       <div className="fixed inset-0 z-10" onClick={() => setShowSleepMenu(false)} />
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.9, y: 5 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.9, y: 5 }}
-                        className="absolute bottom-full right-0 mb-2 bg-background border border-border rounded-xl p-3 z-20 min-w-[160px] shadow-2xl"
-                      >
+                      <div className="absolute bottom-full right-0 mb-2 bg-background border border-border rounded-xl p-3 z-20 min-w-[160px] shadow-2xl animate-in fade-in slide-in-from-bottom-2 zoom-in-95 duration-150">
                         <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-2 px-1">
                           Arrêter dans
                         </p>
@@ -779,10 +761,10 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                             </span>
                           </button>
                         ))}
-                      </motion.div>
+                      </div>
                     </>
                   )}
-                </AnimatePresence>
+                
               </div>
 
               <button 
