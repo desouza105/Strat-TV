@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
+import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle, useCallback } from 'react';
 import Hls from 'hls.js';
 import { Play, Pause, Volume2, VolumeX, Maximize, Loader2, AlertCircle, PictureInPicture2, Settings, Timer, Captions, CaptionsOff, Check, Cast } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -43,6 +43,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [volume, setVolume] = useState(1);
+  const [boostAvailable, setBoostAvailable] = useState(() => typeof Hls !== 'undefined' && Hls.isSupported ? Hls.isSupported() : false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isPipAvailable, setIsPipAvailable] = useState(false);
@@ -58,6 +59,12 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
   const [activeSubtitle, setActiveSubtitle] = useState<number>(-1);
   const [showTracksMenu, setShowTracksMenu] = useState(false);
 
+  // Audio Booster Refs (Web Audio API)
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const gainNodeRef = useRef<GainNode | null>(null);
+  const sourceNodeRef = useRef<MediaElementAudioSourceNode | null>(null);
+  const boostSupportedRef = useRef(true);
+
   const hasBufferedFragmentRef = useRef(false);
   const usedProxyFallbackRef = useRef(false);
   const retryCountRef = useRef(0);
@@ -67,12 +74,96 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
   const playPromiseRef = useRef<Promise<void> | null>(null);
   const [needsUnmutePrompt, setNeedsUnmutePrompt] = useState(false);
 
+  const applyBoost = useCallback((value: number) => {
+    const video = videoRef.current;
+    if (!video || !boostSupportedRef.current || !boostAvailable) return;
+
+    // Si value <= 1 et qu'aucun amplificateur n'existe encore : ne rien faire (aucun AudioContext créé)
+    if (value <= 1 && !audioCtxRef.current) {
+      return;
+    }
+
+    try {
+      // Si value > 1 et qu'il n'existe pas : créer l'AudioContext et la chaîne
+      if (!audioCtxRef.current) {
+        const AudioCtxClass = window.AudioContext || (window as any).webkitAudioContext;
+        if (!AudioCtxClass) {
+          boostSupportedRef.current = false;
+          setVolume(v => Math.min(v, 1));
+          return;
+        }
+
+        const ctx = new AudioCtxClass();
+        audioCtxRef.current = ctx;
+
+        // createMediaElementSource(video) UNE SEULE FOIS par élément vidéo
+        if (!sourceNodeRef.current) {
+          sourceNodeRef.current = ctx.createMediaElementSource(video);
+        }
+
+        // GainNode
+        const gainNode = ctx.createGain();
+        gainNodeRef.current = gainNode;
+
+        // DynamicsCompressorNode (limiteur anti-saturation)
+        const compressor = ctx.createDynamicsCompressor();
+        compressor.threshold.setValueAtTime(-6, ctx.currentTime);
+        compressor.knee.setValueAtTime(12, ctx.currentTime);
+        compressor.ratio.setValueAtTime(12, ctx.currentTime);
+        compressor.attack.setValueAtTime(0.003, ctx.currentTime);
+        compressor.release.setValueAtTime(0.25, ctx.currentTime);
+
+        // Chaînage : source -> GainNode -> DynamicsCompressorNode -> destination
+        sourceNodeRef.current.connect(gainNode);
+        gainNode.connect(compressor);
+        compressor.connect(ctx.destination);
+      }
+
+      // Reprendre l'AudioContext si suspendu
+      if (audioCtxRef.current && audioCtxRef.current.state === 'suspended') {
+        audioCtxRef.current.resume().catch(() => {});
+      }
+
+      // Régler gainNode.gain.value = Math.max(1, value)
+      if (gainNodeRef.current) {
+        gainNodeRef.current.gain.value = Math.max(1, value);
+      }
+    } catch (err) {
+      console.warn("Échec de l'initialisation du boost audio:", err);
+      boostSupportedRef.current = false;
+      setVolume(v => Math.min(v, 1));
+      if (videoRef.current) {
+        videoRef.current.volume = Math.min(value, 1);
+      }
+    }
+  }, [boostAvailable]);
+
+  // Nettoyage au démontage complet du composant
+  useEffect(() => {
+    return () => {
+      if (audioCtxRef.current) {
+        try {
+          if (gainNodeRef.current) gainNodeRef.current.disconnect();
+          if (sourceNodeRef.current) sourceNodeRef.current.disconnect();
+          audioCtxRef.current.close().catch(() => {});
+        } catch (e) {}
+        audioCtxRef.current = null;
+        gainNodeRef.current = null;
+        sourceNodeRef.current = null;
+      }
+    };
+  }, []);
+
   const safePlay = async () => {
     const video = videoRef.current;
     if (!video) return;
 
     if (playPromiseRef.current) {
       await playPromiseRef.current.catch(() => {});
+    }
+
+    if (audioCtxRef.current && audioCtxRef.current.state === 'suspended') {
+      audioCtxRef.current.resume().catch(() => {});
     }
 
     try {
@@ -103,19 +194,20 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
     toggleFullscreen,
     setVolume: (value: number) => {
       if (videoRef.current) {
-        videoRef.current.volume = value;
+        videoRef.current.volume = Math.min(value, 1);
         setVolume(value);
         setIsMuted(value === 0);
         if (value > 0) {
           setNeedsUnmutePrompt(false);
         }
+        applyBoost(value);
       }
     }
   }));
 
   useEffect(() => {
     if (videoRef.current) {
-      videoRef.current.volume = volume;
+      videoRef.current.volume = Math.min(volume, 1);
     }
   }, [volume]);
 
@@ -323,13 +415,16 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
     };
 
     if (Hls.isSupported()) {
+      setBoostAvailable(true);
       initHlsInstance(url);
     } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
       // For Safari native HLS support
+      setBoostAvailable(false);
       video.src = url;
       video.addEventListener('loadedmetadata', handleLoadedMetadata);
       video.addEventListener('error', handleVideoError);
     } else {
+      setBoostAvailable(false);
       setError("HLS is not supported in this browser.");
       if (onError) onError("HLS not supported");
     }
@@ -376,13 +471,14 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
     setVolume(value);
     
     if (videoRef.current) {
-      videoRef.current.volume = value;
+      videoRef.current.volume = Math.min(value, 1);
       const newMuted = value === 0;
       setIsMuted(newMuted);
       if (!newMuted) {
         setNeedsUnmutePrompt(false);
       }
     }
+    applyBoost(value);
   };
 
   const toggleFullscreen = () => {
@@ -506,6 +602,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                 setIsMuted(false);
                 setVolume(1);
                 setNeedsUnmutePrompt(false);
+                applyBoost(1);
               }
             }}
             className="flex items-center gap-2 bg-black/80 hover:bg-black text-white px-4 py-2 rounded-full backdrop-blur-md border border-white/20 shadow-xl transition-all"
@@ -548,14 +645,20 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                   {isMuted || volume === 0 ? <VolumeX className="w-6 h-6" /> : <Volume2 className="w-6 h-6" />}
                 </button>
                 <input
+                  aria-label="Volume"
                   type="range"
                   min="0"
-                  max="1"
+                  max={boostAvailable ? "2" : "1"}
                   step="0.05"
                   value={volume}
                   onChange={handleVolumeChange}
                   className="w-24 h-1 bg-white/30 rounded-lg appearance-none cursor-pointer accent-primary"
                 />
+                {volume > 1 && (
+                  <span className="text-[10px] font-semibold text-muted-foreground tabular-nums">
+                    {Math.round(volume * 100)}%
+                  </span>
+                )}
               </div>
 
               <div className="text-foreground text-sm font-medium ml-2 drop-shadow-md">

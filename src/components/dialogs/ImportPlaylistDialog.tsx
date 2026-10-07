@@ -81,6 +81,7 @@ export function ImportPlaylistDialog({ isOpen, onOpenChange, onSubmit }: ImportP
               <div className="flex flex-col gap-4">
                 <div className="space-y-3">
                   <Input 
+                    aria-label="Nom de la playlist"
                     type="text" 
                     placeholder="Nom de la playlist (optionnel)"
                     value={name} 
@@ -88,6 +89,7 @@ export function ImportPlaylistDialog({ isOpen, onOpenChange, onSubmit }: ImportP
                     className="h-12 bg-background border-input rounded-xl px-4 text-sm" 
                   />
                   <Input 
+                    aria-label="URL de la playlist"
                     type="url" 
                     placeholder="https://exemple.com/playlist.m3u"
                     value={url} 
@@ -117,7 +119,7 @@ export function ImportPlaylistDialog({ isOpen, onOpenChange, onSubmit }: ImportP
                   <p className="text-sm font-semibold tracking-wide text-foreground">Parcourir les fichiers</p>
                   <p className="text-xs text-muted-foreground font-medium tracking-wide">Formats acceptés : .m3u, .m3u8</p>
                 </div>
-                <input type="file" accept=".m3u,.m3u8" className="hidden" onChange={handleFileImport} />
+                <input aria-label="Fichier playlist" type="file" accept=".m3u,.m3u8" className="hidden" onChange={handleFileImport} />
               </label>
             </TabsContent>
           </Tabs>

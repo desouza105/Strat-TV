@@ -74,6 +74,7 @@
 
 .dark, :root {
   --background: #000000;
+  --header: #1a1033;
   --foreground: #ffffff;
   --card: #09090b;
   --card-foreground: #ffffff;

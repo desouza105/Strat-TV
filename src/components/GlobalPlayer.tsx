@@ -93,7 +93,7 @@ export const GlobalPlayer = ({
              <div className="flex justify-between items-start p-2 pointer-events-auto">
                <span className="text-xs font-bold truncate px-2 py-1 bg-black/50 rounded">{channel.name}</span>
                <div className="flex gap-1">
-                 <button onClick={(e) => { e.stopPropagation(); setIsMiniPlayer(false); }} className="p-1.5 bg-black/50 hover:bg-white/20 rounded-lg transition-colors text-white">
+                 <button aria-label="Fermer le mini player" onClick={(e) => { e.stopPropagation(); setIsMiniPlayer(false); }} className="p-1.5 bg-black/50 hover:bg-white/20 rounded-lg transition-colors text-white">
                    <Maximize2 size={14} />
                  </button>
                  <button onClick={(e) => { e.stopPropagation(); closePlayer(); }} className="p-1.5 bg-black/50 hover:bg-red-500/80 rounded-lg transition-colors text-white">
@@ -126,7 +126,7 @@ export const GlobalPlayer = ({
                     <div className="flex items-center justify-between p-3 bg-background/50 border-b border-border">
                       <div className="flex items-center gap-2 max-w-[60%]">
                         {channel.logo && (
-                          <img src={channel.logo} className="w-5 h-5 object-contain" referrerPolicy="no-referrer" />
+                          <img src={channel.logo} alt={channel.name} className="w-5 h-5 object-contain" referrerPolicy="no-referrer" />
                         )}
                         <span className="text-xs font-bold truncate uppercase">{channel.name}</span>
                       </div>

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Download, ChevronDown, Globe, MapPin, Search, LayoutGrid, Grid2x2, Flame, Lock, ShieldCheck, Tv, AlertCircle, Plus, Trash2, Link, FileUp, X as XIcon, BarChart2, Contrast, Menu, Play } from 'lucide-react';
 import { PORTAL_SOURCES, PlaylistSource, getCustomPlaylists, saveCustomPlaylist, deleteCustomPlaylist } from '../constants/portal_data';
 import { useMediaQuery } from '../hooks/useMediaQuery';
@@ -42,6 +42,31 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
   const [isPortalOpen, setIsPortalOpen] = useState(false);
   const [portalTab, setPortalTab] = useState<'Country' | 'Genre'>('Country');
   const [portalSearch, setPortalSearch] = useState('');
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Esc key listener to close Country drawer
+  useEffect(() => {
+    if (!isPortalOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsPortalOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isPortalOpen]);
+
+  // Programmatic focus on pointer: fine devices
+  useEffect(() => {
+    if (isPortalOpen && typeof window !== 'undefined' && window.matchMedia('(pointer: fine)').matches) {
+      const timer = setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [isPortalOpen]);
 
   // Passcode State
   const [isPasscodeOpen, setIsPasscodeOpen] = useState(false);
@@ -105,18 +130,21 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
 
   return (
     <>
-      <header className={cn("bg-background/80 backdrop-blur-md border-b border-border px-4 md:px-6 flex items-center justify-between sticky top-0 z-50 transition-colors duration-300", isMobileLandscape ? "h-10" : "h-16 md:h-16")}>
+      <header className={cn("bg-[var(--header)] shadow-[0_8px_24px_-12px_rgba(10,4,30,0.9)] px-4 md:px-6 flex items-center justify-between sticky top-0 z-50 transition-colors duration-300", isMobileLandscape ? "h-10" : "h-16 md:h-16")}>
         <div className="flex items-center gap-6">
           <div className="hidden lg:flex items-center gap-2">
             <div className="relative">
               <Button
                 variant={isPortalOpen ? "secondary" : "ghost"}
                 onClick={() => setIsPortalOpen(!isPortalOpen)}
-                className="flex items-center gap-2 rounded-xl text-xs px-4 h-10 font-semibold"
+                className={cn(
+                  "flex items-center gap-2 rounded-xl text-xs px-4 h-10 font-semibold transition-colors",
+                  isPortalOpen ? "bg-white/15 hover:bg-white/20 text-white" : "hover:bg-white/10 text-white/80"
+                )}
               >
-                <MapPin size={16} className="text-muted-foreground" />
+                <MapPin size={16} className={isPortalOpen ? "text-white" : "text-white/60"} />
                 COUNTRY
-                <ChevronDown className={cn("w-4 h-4 text-muted-foreground transition-transform", isPortalOpen && "rotate-180")} />
+                <ChevronDown className={cn("w-4 h-4 transition-transform", isPortalOpen ? "rotate-180 text-white" : "text-white/60")} />
               </Button>
             </div>
 
@@ -124,9 +152,12 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
               variant={isAfricaActive ? "secondary" : "ghost"}
               onClick={() => onLoadPlaylist(africaUrl)}
               disabled={isLoading}
-              className="flex items-center gap-2 rounded-xl text-xs px-4 h-10 font-semibold"
+              className={cn(
+                "flex items-center gap-2 rounded-xl text-xs px-4 h-10 font-semibold transition-colors",
+                isAfricaActive ? "bg-white/15 hover:bg-white/20 text-white" : "hover:bg-white/10 text-white/80"
+              )}
             >
-              <Globe size={16} className={isAfricaActive ? 'text-foreground' : 'text-muted-foreground'} />
+              <Globe size={16} className={isAfricaActive ? 'text-white' : 'text-white/60'} />
               AFRICA
               {isLoading && isAfricaActive && <div className="w-3 h-3 border-2 border-foreground border-t-transparent rounded-full animate-spin ml-1" />}
             </Button>
@@ -135,9 +166,12 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
               variant={isEuropaActive ? "secondary" : "ghost"}
               onClick={() => onLoadPlaylist(europaUrl)}
               disabled={isLoading}
-              className="flex items-center gap-2 rounded-xl text-xs px-4 h-10 font-semibold"
+              className={cn(
+                "flex items-center gap-2 rounded-xl text-xs px-4 h-10 font-semibold transition-colors",
+                isEuropaActive ? "bg-white/15 hover:bg-white/20 text-white" : "hover:bg-white/10 text-white/80"
+              )}
             >
-              <MapPin size={16} className={isEuropaActive ? 'text-foreground' : 'text-muted-foreground'} />
+              <MapPin size={16} className={isEuropaActive ? 'text-white' : 'text-white/60'} />
               EUROPA
               {isLoading && isEuropaActive && <div className="w-3 h-3 border-2 border-foreground border-t-transparent rounded-full animate-spin ml-1" />}
             </Button>
@@ -146,9 +180,12 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
               variant={isWorldActive ? "secondary" : "ghost"}
               onClick={() => onLoadPlaylist(worldUrl)}
               disabled={isLoading}
-              className="flex items-center gap-2 rounded-xl text-xs px-4 h-10 font-semibold"
+              className={cn(
+                "flex items-center gap-2 rounded-xl text-xs px-4 h-10 font-semibold transition-colors",
+                isWorldActive ? "bg-white/15 hover:bg-white/20 text-white" : "hover:bg-white/10 text-white/80"
+              )}
             >
-              <Search size={16} className={isWorldActive ? 'text-foreground' : 'text-muted-foreground'} />
+              <Search size={16} className={isWorldActive ? 'text-white' : 'text-white/60'} />
               WORLD
               {isLoading && isWorldActive && <div className="w-3 h-3 border-2 border-foreground border-t-transparent rounded-full animate-spin ml-1" />}
             </Button>
@@ -157,9 +194,12 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
               variant={isRegionalActive ? "secondary" : "ghost"}
               onClick={() => onLoadPlaylist(regionalUrl)}
               disabled={isLoading}
-              className="flex items-center gap-2 rounded-xl text-xs px-4 h-10 font-semibold"
+              className={cn(
+                "flex items-center gap-2 rounded-xl text-xs px-4 h-10 font-semibold transition-colors",
+                isRegionalActive ? "bg-white/15 hover:bg-white/20 text-white" : "hover:bg-white/10 text-white/80"
+              )}
             >
-              <LayoutGrid size={16} className={isRegionalActive ? 'text-foreground' : 'text-muted-foreground'} />
+              <LayoutGrid size={16} className={isRegionalActive ? 'text-white' : 'text-white/60'} />
               REGIONAL
               {isLoading && isRegionalActive && <div className="w-3 h-3 border-2 border-foreground border-t-transparent rounded-full animate-spin ml-1" />}
             </Button>
@@ -168,9 +208,9 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
               variant={isAdultActive ? "destructive" : "ghost"}
               onClick={() => setIsPasscodeOpen(true)}
               disabled={isLoading}
-              className={cn("flex items-center gap-2 rounded-xl text-xs px-4 h-10 font-semibold", !isAdultActive && "hover:text-destructive hover:bg-destructive/10")}
+              className={cn("flex items-center gap-2 rounded-xl text-xs px-4 h-10 font-semibold", !isAdultActive && "hover:text-destructive hover:bg-destructive/10 text-white/80")}
             >
-              <Flame size={16} />
+              <Flame size={16} className={isAdultActive ? "text-white" : "text-white/60"} />
               XXX ADULT
               {isLoading && isAdultActive && <div className="w-3 h-3 border-2 border-foreground border-t-transparent rounded-full animate-spin ml-1" />}
             </Button>
@@ -179,130 +219,147 @@ export default function Header({ onLoadPlaylist, isLoading, currentPlaylistName,
 
         <div className="flex items-center gap-2 md:gap-4">
           <div className="flex lg:hidden items-center gap-2 overflow-x-auto scrollbar-none">
-            <Button variant={isSplitView ? "secondary" : "ghost"} size="icon" onClick={onToggleSplitView} className="h-10 w-10 shrink-0 rounded-xl">
-              <Grid2x2 size={20} className={isSplitView ? 'text-foreground' : 'text-muted-foreground'} />
+            <Button aria-label="Toggle split view" variant={isSplitView ? "secondary" : "ghost"} size="icon" onClick={onToggleSplitView} className={cn("h-10 w-10 shrink-0 rounded-xl border-0 text-white", isSplitView ? "bg-white/20" : "bg-white/10 hover:bg-white/20")}>
+              <Grid2x2 size={20} className="text-white" />
             </Button>
-            <Button variant={isPortalOpen ? "secondary" : "ghost"} size="icon" onClick={() => setIsPortalOpen(!isPortalOpen)} className="h-10 w-10 shrink-0 rounded-xl">
-              <Menu size={20} className={isPortalOpen ? 'text-foreground' : 'text-muted-foreground'} />
+            <Button aria-label="Open portal menu" aria-expanded={isPortalOpen} variant={isPortalOpen ? "secondary" : "ghost"} size="icon" onClick={() => setIsPortalOpen(!isPortalOpen)} className={cn("h-10 w-10 shrink-0 rounded-xl transition-colors", isPortalOpen ? "bg-white/15 hover:bg-white/20 text-white" : "hover:bg-white/10 text-white/80")}>
+              <Menu size={20} className={isPortalOpen ? 'text-white' : 'text-white/60'} />
             </Button>
-            <Button variant={isAfricaActive ? "secondary" : "ghost"} size="icon" onClick={() => onLoadPlaylist(africaUrl)} disabled={isLoading} className="h-10 w-10 shrink-0 rounded-xl">
-              <Globe size={20} className={isAfricaActive ? 'text-foreground' : 'text-muted-foreground'} />
+            <Button aria-label="Load Africa TV playlist" variant={isAfricaActive ? "secondary" : "ghost"} size="icon" onClick={() => onLoadPlaylist(africaUrl)} disabled={isLoading} className={cn("h-10 w-10 shrink-0 rounded-xl transition-colors", isAfricaActive ? "bg-white/15 hover:bg-white/20 text-white" : "hover:bg-white/10 text-white/80")}>
+              <Globe size={20} className={isAfricaActive ? 'text-white' : 'text-white/60'} />
             </Button>
-            <Button variant={isEuropaActive ? "secondary" : "ghost"} size="icon" onClick={() => onLoadPlaylist(europaUrl)} disabled={isLoading} className="h-10 w-10 shrink-0 rounded-xl">
-              <MapPin size={20} className={isEuropaActive ? 'text-foreground' : 'text-muted-foreground'} />
+            <Button aria-label="Load Europa TV playlist" variant={isEuropaActive ? "secondary" : "ghost"} size="icon" onClick={() => onLoadPlaylist(europaUrl)} disabled={isLoading} className={cn("h-10 w-10 shrink-0 rounded-xl transition-colors", isEuropaActive ? "bg-white/15 hover:bg-white/20 text-white" : "hover:bg-white/10 text-white/80")}>
+              <MapPin size={20} className={isEuropaActive ? 'text-white' : 'text-white/60'} />
             </Button>
-            <Button variant={isWorldActive ? "secondary" : "ghost"} size="icon" onClick={() => onLoadPlaylist(worldUrl)} disabled={isLoading} className="h-10 w-10 shrink-0 rounded-xl">
-              <Search size={20} className={isWorldActive ? 'text-foreground' : 'text-muted-foreground'} />
+            <Button aria-label="Load World TV playlist" variant={isWorldActive ? "secondary" : "ghost"} size="icon" onClick={() => onLoadPlaylist(worldUrl)} disabled={isLoading} className={cn("h-10 w-10 shrink-0 rounded-xl transition-colors", isWorldActive ? "bg-white/15 hover:bg-white/20 text-white" : "hover:bg-white/10 text-white/80")}>
+              <Search size={20} className={isWorldActive ? 'text-white' : 'text-white/60'} />
             </Button>
-            <Button variant={isRegionalActive ? "secondary" : "ghost"} size="icon" onClick={() => onLoadPlaylist(regionalUrl)} disabled={isLoading} className="h-10 w-10 shrink-0 rounded-xl">
-              <LayoutGrid size={20} className={isRegionalActive ? 'text-foreground' : 'text-muted-foreground'} />
+            <Button aria-label="Load Regional TV playlist" variant={isRegionalActive ? "secondary" : "ghost"} size="icon" onClick={() => onLoadPlaylist(regionalUrl)} disabled={isLoading} className={cn("h-10 w-10 shrink-0 rounded-xl transition-colors", isRegionalActive ? "bg-white/15 hover:bg-white/20 text-white" : "hover:bg-white/10 text-white/80")}>
+              <LayoutGrid size={20} className={isRegionalActive ? 'text-white' : 'text-white/60'} />
             </Button>
-            <Button variant={isAdultActive ? "destructive" : "ghost"} size="icon" onClick={() => setIsPasscodeOpen(true)} disabled={isLoading} className={cn("h-10 w-10 shrink-0 rounded-xl", !isAdultActive && "hover:bg-destructive/10 hover:text-destructive")}>
-              <Flame size={20} className={isAdultActive ? 'text-foreground' : 'text-muted-foreground'} />
+            <Button aria-label="Open adult playlist" variant={isAdultActive ? "destructive" : "ghost"} size="icon" onClick={() => setIsPasscodeOpen(true)} disabled={isLoading} className={cn("h-10 w-10 shrink-0 rounded-xl text-white/80", !isAdultActive && "hover:bg-destructive/10 hover:text-destructive")}>
+              <Flame size={20} className={isAdultActive ? 'text-white' : 'text-white/60'} />
             </Button>
           </div>
 
           <div className="hidden lg:flex items-center gap-3">
             <Button
-              variant={isSplitView ? "secondary" : "outline"}
+              variant={isSplitView ? "secondary" : "ghost"}
               onClick={onToggleSplitView}
-              className="flex items-center gap-2 rounded-xl text-xs h-10 font-semibold uppercase tracking-wider"
+              className={cn(
+                "flex items-center gap-2 rounded-xl text-xs h-10 font-semibold uppercase tracking-wider border-0 text-white",
+                isSplitView ? "bg-white/20" : "bg-white/10 hover:bg-white/20"
+              )}
             >
               <Grid2x2 size={16} /> {isSplitView ? 'QUITTER MULTI' : 'MULTI-ÉCRAN'}
             </Button>
           </div>
         </div>
 
-        {isPortalOpen && (
-          <>
-            <div className="fixed inset-0 z-40" onClick={() => setIsPortalOpen(false)} />
-            <div className="absolute top-full left-4 lg:left-6 w-[calc(100vw-2rem)] md:w-80 max-h-[80vh] bg-card border border-border rounded-2xl shadow-2xl overflow-hidden flex flex-col z-50 origin-top animate-in fade-in slide-in-from-top-2 duration-200 mt-2">
-              <div className="p-4 border-b border-border">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                  <input
-                    autoFocus
-                    type="text"
-                    placeholder={`Chercher ${portalTab === 'Country' ? 'pays' : 'genre'}...`}
-                    className="w-full bg-secondary border-transparent focus:bg-background focus:border-border focus:ring-1 focus:ring-primary rounded-xl py-2.5 pl-9 pr-4 text-sm text-foreground outline-none transition-all"
-                    value={portalSearch}
-                    onChange={(e) => setPortalSearch(e.target.value)}
-                  />
-                </div>
-              </div>
+        {/* Voile flouté */}
+        <div 
+          className={cn(
+            "fixed inset-x-0 bottom-0 z-40 bg-black/40 backdrop-blur-md transition-opacity duration-300 motion-reduce:transition-none",
+            isMobileLandscape ? "top-10" : "top-16",
+            isPortalOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+          )}
+          onClick={() => setIsPortalOpen(false)}
+        />
 
-              <div className="p-2 bg-background flex gap-2 mx-2 mt-2 rounded-xl border border-border">
-                <Button
-                  variant={portalTab === 'Country' ? "secondary" : "ghost"}
-                  onClick={() => { setPortalTab('Country'); setPortalSearch(''); }}
-                  className="flex-1 rounded-lg text-xs font-semibold uppercase tracking-wider h-9"
-                >
-                  PAYS
-                </Button>
-                <Button
-                  variant={portalTab === 'Genre' ? "secondary" : "ghost"}
-                  onClick={() => { setPortalTab('Genre'); setPortalSearch(''); }}
-                  className="flex-1 rounded-lg text-xs font-semibold uppercase tracking-wider h-9"
-                >
-                  GENRES
-                </Button>
-              </div>
-
-              <div className="flex-1 overflow-y-auto p-2 scrollbar-thin grid grid-cols-1 gap-1">
-                {filteredPortals.map((source) => (
-                  <button
-                    key={source.url}
-                    onClick={() => handlePortalSelect(source)}
-                    className="flex items-center gap-3 p-3 rounded-xl hover:bg-secondary transition-colors text-left group"
-                  >
-                    <div className="w-8 h-8 flex-shrink-0 flex items-center justify-center overflow-hidden bg-muted rounded-md">
-                      {source.code ? (
-                        <img 
-                          src={`https://flagcdn.com/w40/${source.code}.png`} 
-                          alt={source.name} 
-                          className="w-full h-full object-cover"
-                          referrerPolicy="no-referrer"
-                        />
-                      ) : (
-                        <Globe size={16} className="text-muted-foreground" />
-                      )}
-                    </div>
-                    <span className="text-sm font-medium text-muted-foreground group-hover:text-foreground truncate transition-colors">
-                      {source.name}
-                    </span>
-                  </button>
-                ))}
-              </div>
-
-              {customPlaylists.length > 0 && (
-                <div className="border-t border-border p-2 bg-muted/30">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-3 py-2">Mes Playlists</p>
-                  {customPlaylists.map((pl) => (
-                    <div key={pl.url} className="flex items-center gap-2 p-2 rounded-xl hover:bg-secondary group transition-colors">
-                      <button
-                        onClick={() => { onLoadPlaylist(pl.url); setIsPortalOpen(false); }}
-                        className="flex-1 text-left text-sm font-medium text-muted-foreground group-hover:text-foreground truncate px-1 transition-colors"
-                      >
-                        {pl.name}
-                      </button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => {
-                          deleteCustomPlaylist(pl.url);
-                          setCustomPlaylists(getCustomPlaylists());
-                        }}
-                        className="w-8 h-8 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-all"
-                      >
-                        <Trash2 size={16} />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
+        {/* Panneau latéral tiroir */}
+        <div 
+          aria-hidden={!isPortalOpen}
+          className={cn(
+            "fixed left-0 bottom-0 z-50 w-[22rem] max-w-[88vw] bg-card rounded-r-3xl shadow-2xl flex flex-col overflow-hidden transition-[transform,visibility] duration-300 ease-out motion-reduce:transition-none",
+            isMobileLandscape ? "top-10" : "top-16",
+            isPortalOpen ? "translate-x-0 visible" : "-translate-x-full invisible pointer-events-none"
+          )}
+        >
+          <div className="p-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
+              <input
+                ref={searchInputRef}
+                aria-label="Rechercher"
+                type="text"
+                placeholder={`Chercher ${portalTab === 'Country' ? 'pays' : 'genre'}...`}
+                className="w-full bg-secondary border-0 focus:ring-2 focus:ring-primary/30 rounded-xl py-2.5 pl-9 pr-4 text-sm text-foreground outline-none transition-all placeholder:text-muted-foreground"
+                value={portalSearch}
+                onChange={(e) => setPortalSearch(e.target.value)}
+              />
             </div>
-          </>
-        )}
+          </div>
+
+          <div className="p-2 bg-secondary/50 flex gap-2 mx-2 mt-2 rounded-xl">
+            <Button
+              variant={portalTab === 'Country' ? "secondary" : "ghost"}
+              onClick={() => { setPortalTab('Country'); setPortalSearch(''); }}
+              className="flex-1 rounded-lg text-xs font-semibold uppercase tracking-wider h-9"
+            >
+              PAYS
+            </Button>
+            <Button
+              variant={portalTab === 'Genre' ? "secondary" : "ghost"}
+              onClick={() => { setPortalTab('Genre'); setPortalSearch(''); }}
+              className="flex-1 rounded-lg text-xs font-semibold uppercase tracking-wider h-9"
+            >
+              GENRES
+            </Button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-2 scrollbar-none overscroll-contain grid grid-cols-1 gap-1">
+            {filteredPortals.map((source) => (
+              <button
+                key={source.url}
+                onClick={() => handlePortalSelect(source)}
+                className="flex items-center gap-3 p-3.5 rounded-xl hover:bg-secondary transition-colors text-left group"
+              >
+                <div className="w-9 h-9 flex-shrink-0 flex items-center justify-center overflow-hidden bg-muted rounded-lg">
+                  {source.code ? (
+                    <img 
+                      src={`https://flagcdn.com/w40/${source.code}.png`} 
+                      alt={source.name} 
+                      className="w-full h-full object-cover"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <Globe size={18} className="text-muted-foreground" />
+                  )}
+                </div>
+                <span className="text-sm font-medium text-muted-foreground group-hover:text-foreground truncate transition-colors">
+                  {source.name}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          {customPlaylists.length > 0 && (
+            <div className="p-2 bg-muted/30">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-3 py-2">Mes Playlists</p>
+              {customPlaylists.map((pl) => (
+                <div key={pl.url} className="flex items-center gap-2 p-2 rounded-xl hover:bg-secondary group transition-colors">
+                  <button
+                    onClick={() => { onLoadPlaylist(pl.url); setIsPortalOpen(false); }}
+                    className="flex-1 text-left text-sm font-medium text-muted-foreground group-hover:text-foreground truncate px-1 transition-colors"
+                  >
+                    {pl.name}
+                  </button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => {
+                      deleteCustomPlaylist(pl.url);
+                      setCustomPlaylists(getCustomPlaylists());
+                    }}
+                    className="w-8 h-8 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-all"
+                  >
+                    <Trash2 size={16} />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </header>
 
       <PinCodeDialog

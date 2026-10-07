@@ -64,7 +64,7 @@ export default function StatsModal({ isOpen, onClose }: StatsModalProps) {
             <BarChart2 size={24} className="text-primary" />
             <DialogTitle className="text-xl font-bold uppercase tracking-tight">Mes Statistiques</DialogTitle>
           </div>
-          <Button variant="ghost" size="icon" onClick={handleClear} className="text-muted-foreground hover:text-destructive hover:bg-destructive/10" title="Effacer l'historique">
+          <Button aria-label="Effacer l'historique" variant="ghost" size="icon" onClick={handleClear} className="text-muted-foreground hover:text-destructive hover:bg-destructive/10" title="Effacer l'historique">
             <Trash2 size={16} />
           </Button>
         </DialogHeader>

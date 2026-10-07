@@ -55,6 +55,7 @@ export function PinCodeDialog({ isOpen, onOpenChange, onSuccess, title, descript
           <form onSubmit={handleSubmit} className="w-full flex flex-col gap-6">
             <div className="flex flex-col gap-2">
               <Input 
+                aria-label="Code PIN"
                 autoFocus
                 type="password"
                 placeholder="••••••••"
