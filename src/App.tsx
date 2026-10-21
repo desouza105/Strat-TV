@@ -20,13 +20,20 @@ import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { addSession, WatchSession } from './utils/watchStats';
 import StatsModal from './components/StatsModal';
+import NavRail, { AppView } from './components/NavRail';
+import HomeView from './views/HomeView';
+import ExploreView from './views/ExploreView';
+import { ImportPlaylistDialog } from './components/dialogs/ImportPlaylistDialog';
+import { PlaylistSource, saveCustomPlaylist } from './constants/portal_data';
 import { useMediaQuery } from './hooks/useMediaQuery';
 
 export default function App() {
   const isMobileLandscape = useMediaQuery('(orientation: landscape) and (max-height: 500px)');
+  const [view, setView] = useState<AppView>('home');
+  const [isImportOpen, setIsImportOpen] = useState(false);
   const [isLandscapeSidebarOpen, setIsLandscapeSidebarOpen] = useState(false);
   const [channels, setChannels] = useState<IPTVChannel[]>([]);
-  const { selectedChannel, setSelectedChannel, isSplitView, setIsSplitView, splitChannels, setSplitChannels, activeSplitIndex, setActiveSplitIndex } = useGlobalPlayer();
+  const { selectedChannel, setSelectedChannel, isMiniPlayer, setIsMiniPlayer, isSplitView, setIsSplitView, splitChannels, setSplitChannels, activeSplitIndex, setActiveSplitIndex } = useGlobalPlayer();
   const [currentPlaylistUrl, setCurrentPlaylistUrl] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -362,28 +369,97 @@ export default function App() {
     }
   }, [checkChannelsHealth]);
 
+
+  // Le lecteur passe en mini-lecteur dès qu'on quitte la vue « Lecteur » ; « Agrandir » y revient.
+  useEffect(() => {
+    setIsMiniPlayer(view !== 'player' && !!selectedChannel);
+  }, [view, selectedChannel]);
+
+  useEffect(() => {
+    if (!isMiniPlayer && view !== 'player' && selectedChannel) setView('player');
+  }, [isMiniPlayer]);
+
+  const openMosaic = useCallback(() => {
+    setView('player');
+    if (!isSplitView) toggleSplitView();
+  }, [isSplitView, toggleSplitView]);
+
+  const handleImportSubmit = useCallback((url: string, name: string) => {
+    const playlist: PlaylistSource = { name: name.trim() || 'Ma Playlist', url: url.trim(), category: 'Country', code: '' };
+    saveCustomPlaylist(playlist);
+    loadPlaylist(url.trim());
+    setIsImportOpen(false);
+    setView('player');
+  }, [loadPlaylist]);
+
+  const loadAndWatch = useCallback((url: string) => {
+    loadPlaylist(url);
+    setView('player');
+  }, [loadPlaylist]);
+
   const handlePlayerError = useCallback((playerError: string) => {
     console.log('Player error:', playerError);
   }, []);
 
+  const globalPlayerProps = {
+    playlistName, error, sleepTimerActive, sleepTimerRemaining,
+    formatRemaining, cancelSleepTimer, startSleepTimer, handlePlayerError,
+  };
+
   return (
-    <div className="flex flex-col h-screen bg-background text-foreground transition-colors duration-300 selection:bg-primary/20">
+    <div className="flex h-screen flex-col bg-background text-foreground transition-colors duration-300 selection:bg-primary/20 md:flex-row">
       <AnimatePresence>
         {isAppLoading && (
           <SplashScreen onComplete={() => setIsAppLoading(false)} />
         )}
       </AnimatePresence>
 
-      <Header 
-        onLoadPlaylist={loadPlaylist} 
-        isLoading={isLoading} 
-        currentPlaylistName={playlistName}
+      <NavRail
+        view={view}
         isSplitView={isSplitView}
-        onToggleSplitView={toggleSplitView}
+        onNavigate={setView}
+        onOpenMosaic={openMosaic}
         onOpenStats={() => setIsStatsOpen(true)}
       />
-      
-      <main className="flex flex-col md:flex-row flex-1 overflow-hidden relative">
+
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        {view === 'home' && (
+          <HomeView
+            channels={channels}
+            selectedChannel={selectedChannel}
+            playlistName={playlistName}
+            isLoading={isLoading}
+            onWatch={() => setView('player')}
+            onSelectChannel={handleChannelSelect}
+            onLoadPlaylist={loadPlaylist}
+            onExplore={() => setView('explore')}
+            onImport={() => setIsImportOpen(true)}
+          />
+        )}
+
+        {view === 'explore' && (
+          <ExploreView
+            playlistName={playlistName}
+            isLoading={isLoading}
+            onLoadPlaylist={loadAndWatch}
+            onImport={() => setIsImportOpen(true)}
+          />
+        )}
+
+        {view !== 'player' && selectedChannel && isMiniPlayer && <GlobalPlayer {...globalPlayerProps} />}
+
+        {view === 'player' && (
+          <>
+            <Header
+              onLoadPlaylist={loadPlaylist}
+              isLoading={isLoading}
+              currentPlaylistName={playlistName}
+              isSplitView={isSplitView}
+              onToggleSplitView={toggleSplitView}
+              onOpenStats={() => setIsStatsOpen(true)}
+            />
+
+            <main className="relative flex flex-1 flex-col overflow-hidden md:flex-row">
         <Sidebar 
           channels={channels} 
           selectedChannel={isSplitView ? splitChannels[activeSplitIndex] : selectedChannel} 
@@ -408,19 +484,19 @@ export default function App() {
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/5 blur-[120px] rounded-full pointer-events-none" />
 
           
-          <GlobalPlayer 
-            playlistName={playlistName}
-            error={error}
-            sleepTimerActive={sleepTimerActive}
-            sleepTimerRemaining={sleepTimerRemaining}
-            formatRemaining={formatRemaining}
-            cancelSleepTimer={cancelSleepTimer}
-            startSleepTimer={startSleepTimer}
-            handlePlayerError={handlePlayerError}
-          />
+          <GlobalPlayer {...globalPlayerProps} />
 
         </section>
-      </main>
+            </main>
+          </>
+        )}
+      </div>
+
+      <ImportPlaylistDialog
+        isOpen={isImportOpen}
+        onOpenChange={setIsImportOpen}
+        onSubmit={handleImportSubmit}
+      />
 
       <style>{`
         .custom-scrollbar::-webkit-scrollbar {
