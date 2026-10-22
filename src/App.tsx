@@ -8,7 +8,6 @@ import { GlobalPlayer } from "./components/GlobalPlayer";
  */
 
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import VideoPlayer, { VideoPlayerRef } from './components/VideoPlayer';
 import SplashScreen from './components/SplashScreen';
@@ -417,7 +416,7 @@ export default function App() {
       <NavRail
         view={view}
         isSplitView={isSplitView}
-        onNavigate={setView}
+        onNavigate={(v) => { if (v === 'player' && view === 'player' && isSplitView) toggleSplitView(); setView(v); }}
         onOpenMosaic={openMosaic}
         onOpenStats={() => setIsStatsOpen(true)}
       />
@@ -449,46 +448,36 @@ export default function App() {
         {view !== 'player' && selectedChannel && isMiniPlayer && <GlobalPlayer {...globalPlayerProps} />}
 
         {view === 'player' && (
-          <>
-            <Header
-              onLoadPlaylist={loadPlaylist}
+          <main className="relative flex flex-1 flex-col gap-5 overflow-hidden p-4 md:flex-row md:py-7 md:pr-9 md:pl-2">
+            <section className={cn('relative order-1 flex min-w-0 flex-1 flex-col gap-4 overflow-y-auto custom-scrollbar', isMobileLandscape ? 'min-h-0' : 'min-h-[40vh]')}>
+              {isMobileLandscape && (
+                <button
+                  onClick={() => setIsLandscapeSidebarOpen(true)}
+                  className="absolute left-0 top-0 z-40 rounded-btn border border-border bg-card/80 p-2 backdrop-blur-md md:hidden"
+                  aria-label="Ouvrir la liste des chaînes"
+                >
+                  <Menu size={20} className="text-foreground" />
+                </button>
+              )}
+              <GlobalPlayer
+                {...globalPlayerProps}
+                onExplore={() => setView('explore')}
+                onImport={() => setIsImportOpen(true)}
+                onRetry={currentPlaylistUrl ? () => loadPlaylist(currentPlaylistUrl) : undefined}
+              />
+            </section>
+
+            <Sidebar
+              channels={channels}
+              selectedChannel={isSplitView ? splitChannels[activeSplitIndex] : selectedChannel}
+              onChannelSelect={handleChannelSelect}
               isLoading={isLoading}
-              currentPlaylistName={playlistName}
-              isSplitView={isSplitView}
-              onToggleSplitView={toggleSplitView}
-              onOpenStats={() => setIsStatsOpen(true)}
+              channelStatus={channelStatus}
+              isMobileLandscape={isMobileLandscape}
+              isOpen={isLandscapeSidebarOpen}
+              onClose={() => setIsLandscapeSidebarOpen(false)}
             />
-
-            <main className="relative flex flex-1 flex-col overflow-hidden md:flex-row">
-        <Sidebar 
-          channels={channels} 
-          selectedChannel={isSplitView ? splitChannels[activeSplitIndex] : selectedChannel} 
-          onChannelSelect={handleChannelSelect} 
-          isLoading={isLoading}
-          channelStatus={channelStatus}
-          isMobileLandscape={isMobileLandscape}
-          isOpen={isLandscapeSidebarOpen}
-          onClose={() => setIsLandscapeSidebarOpen(false)}
-        />
-
-        <section className={cn("flex-1 flex flex-col items-center justify-center p-4 md:p-8 bg-background relative overflow-y-auto custom-scrollbar transition-colors duration-300 order-1 md:order-2", isMobileLandscape ? "min-h-0" : "min-h-[50vh]")}>
-          {isMobileLandscape && (
-             <button 
-               onClick={() => setIsLandscapeSidebarOpen(true)}
-               className="absolute top-4 left-4 z-40 p-2 bg-card/80 backdrop-blur-md rounded-xl border border-border shadow-lg md:hidden"
-               aria-label="Ouvrir la liste des chaînes"
-             >
-               <Menu size={20} className="text-foreground" />
-             </button>
-          )}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/5 blur-[120px] rounded-full pointer-events-none" />
-
-          
-          <GlobalPlayer {...globalPlayerProps} />
-
-        </section>
-            </main>
-          </>
+          </main>
         )}
       </div>
 

@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react';
-import { Search, Plus } from 'lucide-react';
+import { Search, Plus, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PORTAL_SOURCES, PlaylistSource, getCustomPlaylists } from '../constants/portal_data';
 import { cn } from '@/lib/utils';
+import { PinCodeDialog } from '../components/dialogs/PinCodeDialog';
+import { PROTECTED_SECTION_CODE, PROTECTED_SECTION_URL } from '../constants/protected';
 
 interface ExploreViewProps {
   playlistName: string;
@@ -47,6 +49,7 @@ export default function ExploreView({ playlistName, isLoading, onLoadPlaylist, o
   );
   const [tab, setTab] = useState<PlaylistSource['category']>(categories[0] ?? 'Country');
   const [query, setQuery] = useState('');
+  const [pinOpen, setPinOpen] = useState(false);
   const custom = useMemo(() => getCustomPlaylists(), []);
 
   const list = useMemo(
@@ -103,8 +106,27 @@ export default function ExploreView({ playlistName, isLoading, onLoadPlaylist, o
         {list.map((s) => (
           <SourceTile key={s.url} source={s} selected={playlistName === s.name} disabled={isLoading} onClick={() => onLoadPlaylist(s.url)} />
         ))}
+        {!query && tab === 'Genre' && (
+          <button
+            type="button"
+            onClick={() => setPinOpen(true)}
+            className="flex h-28 min-w-0 flex-col justify-between rounded-[20px] border border-dashed border-white/15 p-4 text-left outline-none transition-colors hover:bg-card focus-visible:ring-2 focus-visible:ring-ring/60"
+          >
+            <Lock size={20} className="text-muted-foreground" aria-hidden="true" />
+            <span className="flex items-baseline justify-between gap-2"><span className="text-base font-semibold">Section protégée</span><span className="text-[13px] text-muted-foreground">Code requis</span></span>
+          </button>
+        )}
         {list.length === 0 && <p className="col-span-full text-sm text-muted-foreground">Aucun résultat.</p>}
       </div>
+      <PinCodeDialog
+        isOpen={pinOpen}
+        onOpenChange={setPinOpen}
+        onSuccess={() => onLoadPlaylist(PROTECTED_SECTION_URL)}
+        title={<span>Section <span className="font-bold">protégée</span></span>}
+        description="Saisis le code pour confirmer ton âge et accéder au contenu."
+        secretCode={PROTECTED_SECTION_CODE}
+        icon={<Lock size={32} strokeWidth={1.5} />}
+      />
     </div>
   );
 }
