@@ -1,7 +1,7 @@
-import { Home, Compass, Tv, LayoutGrid, Activity } from 'lucide-react';
+import { Home, Compass, Tv, LayoutGrid, Activity, Search, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export type AppView = 'home' | 'explore' | 'player';
+export type AppView = 'home' | 'explore' | 'player' | 'settings';
 
 interface NavRailProps {
   view: AppView;
@@ -9,16 +9,19 @@ interface NavRailProps {
   onNavigate: (view: AppView) => void;
   onOpenMosaic: () => void;
   onOpenStats: () => void;
+  onOpenSearch: () => void;
 }
 
 /** Rail de navigation latérale (maquettes V3) : icônes carrées de 44 px, coins 12 px. */
-export default function NavRail({ view, isSplitView, onNavigate, onOpenMosaic, onOpenStats }: NavRailProps) {
+export default function NavRail({ view, isSplitView, onNavigate, onOpenMosaic, onOpenStats, onOpenSearch }: NavRailProps) {
   const items = [
+    { id: 'search', label: 'Rechercher (Ctrl K)', icon: Search, active: false, onClick: onOpenSearch },
     { id: 'home', label: 'Accueil', icon: Home, active: view === 'home', onClick: () => onNavigate('home') },
     { id: 'explore', label: 'Explorer', icon: Compass, active: view === 'explore', onClick: () => onNavigate('explore') },
     { id: 'player', label: 'Lecteur', icon: Tv, active: view === 'player' && !isSplitView, onClick: () => onNavigate('player') },
     { id: 'mosaic', label: 'Mosaïque', icon: LayoutGrid, active: view === 'player' && isSplitView, onClick: onOpenMosaic },
     { id: 'stats', label: 'Activité', icon: Activity, active: false, onClick: onOpenStats },
+    { id: 'settings', label: 'Réglages', icon: Settings, active: view === 'settings', onClick: () => onNavigate('settings') },
   ];
 
   return (

@@ -22,6 +22,9 @@ import StatsModal from './components/StatsModal';
 import NavRail, { AppView } from './components/NavRail';
 import HomeView from './views/HomeView';
 import ExploreView from './views/ExploreView';
+import SettingsView from './views/SettingsView';
+import CommandPalette from './components/CommandPalette';
+import { useHighContrast } from './hooks/useHighContrast';
 import { ImportPlaylistDialog } from './components/dialogs/ImportPlaylistDialog';
 import { PlaylistSource, saveCustomPlaylist } from './constants/portal_data';
 import { useMediaQuery } from './hooks/useMediaQuery';
@@ -30,6 +33,8 @@ export default function App() {
   const isMobileLandscape = useMediaQuery('(orientation: landscape) and (max-height: 500px)');
   const [view, setView] = useState<AppView>('home');
   const [isImportOpen, setIsImportOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [highContrast, setHighContrast] = useHighContrast();
   const [isLandscapeSidebarOpen, setIsLandscapeSidebarOpen] = useState(false);
   const [channels, setChannels] = useState<IPTVChannel[]>([]);
   const { selectedChannel, setSelectedChannel, isMiniPlayer, setIsMiniPlayer, isSplitView, setIsSplitView, splitChannels, setSplitChannels, activeSplitIndex, setActiveSplitIndex } = useGlobalPlayer();
@@ -199,6 +204,8 @@ export default function App() {
     const handleKeyDown = (e: KeyboardEvent) => {
       const isInput = (e.target as HTMLElement).tagName === 'INPUT';
       
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); setIsSearchOpen(true); return; }
+
       // Security shortcuts
       if (e.key === 'F12') e.preventDefault();
       if (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) e.preventDefault();
@@ -419,6 +426,7 @@ export default function App() {
         onNavigate={(v) => { if (v === 'player' && view === 'player' && isSplitView) toggleSplitView(); setView(v); }}
         onOpenMosaic={openMosaic}
         onOpenStats={() => setIsStatsOpen(true)}
+        onOpenSearch={() => setIsSearchOpen(true)}
       />
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
@@ -441,6 +449,19 @@ export default function App() {
             playlistName={playlistName}
             isLoading={isLoading}
             onLoadPlaylist={loadAndWatch}
+            onImport={() => setIsImportOpen(true)}
+          />
+        )}
+
+        {view === 'settings' && (
+          <SettingsView
+            playlistName={playlistName}
+            isLoading={isLoading}
+            channelStatus={channelStatus}
+            highContrast={highContrast}
+            onHighContrastChange={setHighContrast}
+            onLoadPlaylist={loadAndWatch}
+            onRefresh={() => currentPlaylistUrl && loadPlaylist(currentPlaylistUrl)}
             onImport={() => setIsImportOpen(true)}
           />
         )}
@@ -480,6 +501,17 @@ export default function App() {
           </main>
         )}
       </div>
+
+      <CommandPalette
+        open={isSearchOpen}
+        onOpenChange={setIsSearchOpen}
+        channels={channels}
+        onSelectChannel={(c) => { handleChannelSelect(c); setView('player'); }}
+        onLoadSource={loadAndWatch}
+        onNavigate={setView}
+        onOpenImport={() => setIsImportOpen(true)}
+        onOpenMosaic={openMosaic}
+      />
 
       <ImportPlaylistDialog
         isOpen={isImportOpen}
