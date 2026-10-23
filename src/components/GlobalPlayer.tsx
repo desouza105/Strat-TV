@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { cn } from '@/lib/utils';
-import { Maximize2, X, Timer, Tv, AlertTriangle, Compass, Plus, RefreshCw, LayoutGrid } from 'lucide-react';
+import { Maximize2, X, Timer, Tv, AlertTriangle, Compass, Plus, RefreshCw, LayoutGrid, ChevronUp, ChevronDown } from 'lucide-react';
 import VideoPlayer, { VideoPlayerRef } from './VideoPlayer';
 import { useGlobalPlayer } from '../context/GlobalPlayerContext';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,8 @@ interface GlobalPlayerProps {
   onExplore?: () => void;
   onImport?: () => void;
   onRetry?: () => void;
+  channels?: IPTVChannel[];
+  onZap?: (direction: 'next' | 'prev') => void;
 }
 
 function Message({ icon, title, text, children }: { icon: React.ReactNode; title: string; text: string; children?: React.ReactNode }) {
@@ -35,7 +37,7 @@ function Message({ icon, title, text, children }: { icon: React.ReactNode; title
 export const GlobalPlayer = ({
   playlistName, error, sleepTimerActive, sleepTimerRemaining,
   formatRemaining, cancelSleepTimer, startSleepTimer, handlePlayerError,
-  onExplore, onImport, onRetry,
+  onExplore, onImport, onRetry, channels = [], onZap,
 }: GlobalPlayerProps) => {
   const {
     selectedChannel, setSelectedChannel, isMiniPlayer, setIsMiniPlayer,
@@ -156,6 +158,9 @@ export const GlobalPlayer = ({
 
   if (!selectedChannel) return null;
 
+  const currentIndex = channels.findIndex((c) => c.url === selectedChannel.url);
+  const nextChannel = channels.length > 1 && currentIndex >= 0 ? channels[(currentIndex + 1) % channels.length] : null;
+
   return (
     <div key={selectedChannel.url} className="z-10 w-full animate-in fade-in duration-300">
       {sleepTimerActive && (
@@ -169,15 +174,17 @@ export const GlobalPlayer = ({
         </div>
       )}
 
-      <VideoPlayer
-        ref={playerRef}
-        url={selectedChannel.url}
-        name={selectedChannel.name}
-        onError={handlePlayerError}
-        onStartSleepTimer={startSleepTimer}
-        sleepTimerActive={sleepTimerActive}
-        miniPlayer={false}
-      />
+      <div style={{ maxWidth: 'max(320px, min(100%, calc((100vh - 380px) * 16 / 9)))' }}>
+        <VideoPlayer
+          ref={playerRef}
+          url={selectedChannel.url}
+          name={selectedChannel.name}
+          onError={handlePlayerError}
+          onStartSleepTimer={startSleepTimer}
+          sleepTimerActive={sleepTimerActive}
+          miniPlayer={false}
+        />
+      </div>
 
       <div className="mt-5 flex flex-wrap items-center justify-between gap-4">
         <div className="min-w-0">
@@ -189,6 +196,49 @@ export const GlobalPlayer = ({
           </div>
         </div>
         <Button variant="outline" onClick={() => { setSplitChannels((prev) => (prev.length ? prev : [selectedChannel])); setIsSplitView(true); }}><LayoutGrid /> Mosaïque</Button>
+      </div>
+
+      {/* Cockpit : zapping, minuterie, raccourcis */}
+      <div className="mt-5 grid gap-5 md:grid-cols-3">
+        <section aria-label="Zapping" className="flex items-center gap-4 rounded-card border border-white/[0.06] bg-card p-5">
+          <div className="flex flex-col gap-2">
+            <Button variant="secondary" size="icon" aria-label="Chaîne précédente" disabled={!onZap || channels.length < 2} onClick={() => onZap?.('prev')}><ChevronUp /></Button>
+            <Button variant="secondary" size="icon" aria-label="Chaîne suivante" disabled={!onZap || channels.length < 2} onClick={() => onZap?.('next')}><ChevronDown /></Button>
+          </div>
+          <div className="min-w-0">
+            <span className="text-xs uppercase tracking-widest text-muted-foreground">Chaîne suivante</span>
+            <div className="truncate text-lg font-semibold">{nextChannel ? nextChannel.name : '—'}</div>
+            <div className="text-[13px] text-muted-foreground">{currentIndex >= 0 ? `Chaîne ${currentIndex + 1} sur ${channels.length}` : 'Zapping indisponible'}</div>
+          </div>
+        </section>
+
+        <section aria-label="Minuterie" className="flex flex-col justify-between gap-3 rounded-card border border-white/[0.06] bg-card p-5">
+          <span className="text-xs uppercase tracking-widest text-muted-foreground">Minuterie</span>
+          {sleepTimerActive ? (
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <div className="text-3xl font-light tabular-nums leading-none">{formatRemaining(sleepTimerRemaining)}</div>
+                <div className="mt-1 text-[13px] text-muted-foreground">avant l'arrêt de la lecture</div>
+              </div>
+              <Button variant="outline" size="sm" onClick={cancelSleepTimer}><X /> Annuler</Button>
+            </div>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {[15, 30, 60, 90].map((m) => (
+                <Button key={m} variant="outline" size="sm" onClick={() => startSleepTimer(m)}>{m} min</Button>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section aria-label="Raccourcis clavier" className="flex flex-col justify-between gap-3 rounded-card border border-white/[0.06] bg-card p-5">
+          <span className="text-xs uppercase tracking-widest text-muted-foreground">Raccourcis</span>
+          <ul className="grid grid-cols-2 gap-x-4 gap-y-2 text-[13px] text-muted-foreground">
+            {[['Espace', 'Lecture'], ['M', 'Muet'], ['F', 'Plein écran'], ['← →', 'Zapper'], ['1–9', 'Volume'], ['Ctrl K', 'Recherche']].map(([k, l]) => (
+              <li key={k} className="flex items-center gap-2"><Badge variant="neutral" className="text-foreground">{k}</Badge>{l}</li>
+            ))}
+          </ul>
+        </section>
       </div>
     </div>
   );

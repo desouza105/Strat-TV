@@ -23,6 +23,7 @@ import HomeView from './views/HomeView';
 import ExploreView from './views/ExploreView';
 import SettingsView from './views/SettingsView';
 import ActivityView from './views/ActivityView';
+import TvView from './views/TvView';
 import CommandPalette from './components/CommandPalette';
 import { useHighContrast } from './hooks/useHighContrast';
 import { ImportPlaylistDialog } from './components/dialogs/ImportPlaylistDialog';
@@ -32,6 +33,8 @@ import { useMediaQuery } from './hooks/useMediaQuery';
 export default function App() {
   const isMobileLandscape = useMediaQuery('(orientation: landscape) and (max-height: 500px)');
   const [view, setView] = useState<AppView>('home');
+  const viewRef = useRef<AppView>('home');
+  useEffect(() => { viewRef.current = view; }, [view]);
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [highContrast, setHighContrast] = useHighContrast();
@@ -234,6 +237,10 @@ export default function App() {
         if (e.key === 'ArrowLeft') {
           switchChannel('prev');
         }
+        if (viewRef.current === 'player' && document.activeElement === document.body) {
+          if (e.key === 'ArrowDown') { e.preventDefault(); switchChannel('next'); }
+          if (e.key === 'ArrowUp') { e.preventDefault(); switchChannel('prev'); }
+        }
         // Volume 1-9
         if (/^[1-9]$/.test(e.key)) {
           const volumeValue = parseInt(e.key) / 10;
@@ -399,11 +406,11 @@ export default function App() {
 
   // Le lecteur passe en mini-lecteur dès qu'on quitte la vue « Lecteur » ; « Agrandir » y revient.
   useEffect(() => {
-    setIsMiniPlayer(view !== 'player' && !!selectedChannel);
+    setIsMiniPlayer(view !== 'player' && view !== 'tv' && !!selectedChannel);
   }, [view, selectedChannel]);
 
   useEffect(() => {
-    if (!isMiniPlayer && view !== 'player' && selectedChannel) setView('player');
+    if (!isMiniPlayer && view !== 'player' && view !== 'tv' && selectedChannel) setView('player');
   }, [isMiniPlayer]);
 
   const openMosaic = useCallback(() => {
@@ -441,14 +448,14 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      <NavRail
+      {view !== 'tv' && <NavRail
         view={view}
         isSplitView={isSplitView}
         onNavigate={(v) => { if (v === 'player' && view === 'player' && isSplitView) toggleSplitView(); setView(v); }}
         onOpenMosaic={openMosaic}
         onOpenStats={() => setView('activity')}
         onOpenSearch={() => setIsSearchOpen(true)}
-      />
+      />}
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         {view === 'home' && (
@@ -463,6 +470,18 @@ export default function App() {
             onExplore={() => setView('explore')}
             onImport={() => setIsImportOpen(true)}
             statsVersion={statsVersion}
+            onTvMode={() => setView('tv')}
+          />
+        )}
+
+        {view === 'tv' && (
+          <TvView
+            channels={channels}
+            selectedChannel={selectedChannel}
+            playlistName={playlistName}
+            onWatch={() => setView('player')}
+            onSelectChannel={setSelectedChannel}
+            onExit={() => setView('home')}
           />
         )}
 
@@ -490,7 +509,7 @@ export default function App() {
           />
         )}
 
-        {view !== 'player' && selectedChannel && isMiniPlayer && <GlobalPlayer {...globalPlayerProps} />}
+        {view !== 'player' && view !== 'tv' && selectedChannel && isMiniPlayer && <GlobalPlayer {...globalPlayerProps} />}
 
         {view === 'player' && (
           <main className="relative flex flex-1 flex-col gap-5 overflow-hidden p-4 md:flex-row md:py-7 md:pr-9 md:pl-2">
@@ -506,6 +525,8 @@ export default function App() {
               )}
               <GlobalPlayer
                 {...globalPlayerProps}
+                channels={channels}
+                onZap={switchChannel}
                 onExplore={() => setView('explore')}
                 onImport={() => setIsImportOpen(true)}
                 onRetry={currentPlaylistUrl ? () => loadPlaylist(currentPlaylistUrl) : undefined}

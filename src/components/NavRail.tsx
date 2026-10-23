@@ -1,7 +1,7 @@
 import { Home, Compass, Tv, LayoutGrid, Activity, Search, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export type AppView = 'home' | 'explore' | 'player' | 'settings' | 'activity';
+export type AppView = 'home' | 'explore' | 'player' | 'settings' | 'activity' | 'tv';
 
 interface NavRailProps {
   view: AppView;

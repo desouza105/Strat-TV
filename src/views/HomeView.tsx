@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Play, Plus, Compass } from 'lucide-react';
+import { Play, Plus, Compass, Tv } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
@@ -24,6 +24,7 @@ interface HomeViewProps {
   onLoadPlaylist: (url: string) => void;
   onExplore: () => void;
   onImport: () => void;
+  onTvMode?: () => void;
   statsVersion?: number;
 }
 
@@ -54,7 +55,7 @@ function Tile({ channel, active, onClick }: { channel: IPTVChannel; active?: boo
 }
 
 export default function HomeView({
-  channels, selectedChannel, playlistName, isLoading, onWatch, onSelectChannel, onLoadPlaylist, onExplore, onImport, statsVersion = 0,
+  channels, selectedChannel, playlistName, isLoading, onWatch, onSelectChannel, onLoadPlaylist, onExplore, onImport, onTvMode, statsVersion = 0,
 }: HomeViewProps) {
   const [, force] = useState(0);
   const today = useMemo(() => {
@@ -83,6 +84,7 @@ export default function HomeView({
           <h1 className="text-2xl font-semibold leading-9 md:text-[30px]">Que regarde-t-on ce soir ?</h1>
         </div>
         <div className="flex gap-3">
+          {onTvMode && <Button variant="outline" onClick={onTvMode}><Tv /> Mode TV</Button>}
           <Button variant="outline" onClick={onExplore}><Compass /> Explorer</Button>
           <Button variant="outline" onClick={onImport}><Plus /> Importer</Button>
         </div>
