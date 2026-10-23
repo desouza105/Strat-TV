@@ -539,7 +539,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
   };
 
   return (
-    <div className="relative w-full aspect-video bg-black group overflow-hidden rounded-xl shadow-2xl">
+    <div className="relative w-full aspect-video bg-black group overflow-hidden rounded-card border border-white/[0.06]">
       {castState === "connected" && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 z-10 p-6 text-center">
           <Cast className="w-16 h-16 text-primary mb-4 animate-pulse" />
@@ -605,7 +605,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                 applyBoost(1);
               }
             }}
-            className="flex items-center gap-2 bg-black/80 hover:bg-black text-white px-4 py-2 rounded-full backdrop-blur-md border border-white/20 shadow-xl transition-all"
+            className="flex items-center gap-2 bg-black/80 hover:bg-black text-white px-4 py-2 rounded-btn backdrop-blur-md border border-white/20 shadow-xl transition-all"
           >
             <VolumeX className="w-4 h-4" />
             <span className="text-xs font-bold uppercase tracking-wider">Activer le son</span>
@@ -630,7 +630,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
             <div className="flex items-center gap-4">
               <button 
                 onClick={togglePlay}
-                className="p-2 flex items-center justify-center min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 hover:bg-white/20 rounded-full transition-colors text-foreground"
+                className="p-2 flex items-center justify-center min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 hover:bg-white/10 rounded-btn transition-colors text-foreground"
                 aria-label={isPlaying ? "Mettre en pause" : "Lire"}
               >
                 {isPlaying ? <Pause className="fill-current w-6 h-6" /> : <Play className="fill-current w-6 h-6" />}
@@ -639,7 +639,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
               <div className="hidden sm:flex items-center gap-2">
                 <button 
                   onClick={toggleMute}
-                  className="p-2 flex items-center justify-center min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 hover:bg-white/20 rounded-full transition-colors text-foreground"
+                  className="p-2 flex items-center justify-center min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 hover:bg-white/10 rounded-btn transition-colors text-foreground"
                   aria-label={isMuted || volume === 0 ? "Activer le son" : "Couper le son"}
                 >
                   {isMuted || volume === 0 ? <VolumeX className="w-6 h-6" /> : <Volume2 className="w-6 h-6" />}
@@ -672,7 +672,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                 <div className="relative">
                   <button 
                     onClick={() => setIsQualityOpen(!isQualityOpen)}
-                    className="flex items-center justify-center gap-1.5 px-3 py-1.5 min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 hover:bg-white/20 rounded-lg transition-colors text-foreground text-[10px] font-semibold uppercase tracking-widest border border-white/20"
+                    className="flex items-center justify-center gap-1.5 px-3 py-1.5 min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 hover:bg-white/20 rounded-lg transition-colors text-foreground text-[13px] font-medium border border-white/20"
                     aria-label="Paramètres de qualité"
                   >
                     <Settings className={cn("w-3.5 h-3.5", isQualityOpen && "animate-spin-slow")} />
@@ -711,7 +711,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
               {isPipAvailable && (
                 <button 
                   onClick={togglePip}
-                  className="p-2 flex items-center justify-center min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 hover:bg-white/20 rounded-full transition-colors text-foreground"
+                  className="p-2 flex items-center justify-center min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 hover:bg-white/10 rounded-btn transition-colors text-foreground"
                   title="Miniature (PiP)"
                   aria-label="Afficher en mode miniature (PiP)"
                 >
@@ -722,7 +722,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
               {isCastAvailable && (
                 <button 
                   onClick={toggleCast}
-                  className={cn("p-2 flex items-center justify-center min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 hover:bg-white/20 rounded-full transition-colors", castState === "connected" ? "text-primary" : "text-foreground")}
+                  className={cn("p-2 flex items-center justify-center min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 hover:bg-white/10 rounded-btn transition-colors", castState === "connected" ? "text-primary" : "text-foreground")}
                   title="Diffuser"
                   aria-label="Diffuser sur un autre appareil"
                 >
@@ -872,7 +872,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
 
               <button 
                 onClick={toggleFullscreen}
-                className="p-2 flex items-center justify-center min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 hover:bg-white/20 rounded-full transition-colors text-foreground"
+                className="p-2 flex items-center justify-center min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 hover:bg-white/10 rounded-btn transition-colors text-foreground"
                 aria-label="Basculer le plein écran"
               >
                 <Maximize className="w-6 h-6" />

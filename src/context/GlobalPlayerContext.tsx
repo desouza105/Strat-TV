@@ -7,7 +7,7 @@ interface GlobalPlayerContextType {
   isMiniPlayer: boolean;
   setIsMiniPlayer: (isMini: boolean) => void;
   isSplitView: boolean;
-  setIsSplitView: (isSplit: boolean) => void;
+  setIsSplitView: (isSplit: boolean | ((prev: boolean) => boolean)) => void;
   splitChannels: IPTVChannel[];
   setSplitChannels: (channels: IPTVChannel[] | ((prev: IPTVChannel[]) => IPTVChannel[])) => void;
   activeSplitIndex: number;

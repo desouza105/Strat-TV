@@ -7,6 +7,7 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Search, Tv, MapPin, X } from 'lucide-react';
 import { IPTVChannel } from '../types/iptv';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
 interface SidebarProps {
@@ -179,10 +180,10 @@ export default function Sidebar({
         />
       )}
       <aside 
-        className={cn("bg-card flex flex-col overflow-hidden transition-all duration-300", 
+        className={cn("bg-card flex flex-col overflow-hidden transition-all duration-300 rounded-card border border-white/[0.06]", 
           isMobileLandscape 
             ? `fixed inset-y-0 left-0 z-50 w-80 h-full ${isOpen ? 'translate-x-0' : '-translate-x-full'}`
-            : 'w-full md:w-80 h-[45vh] md:h-full order-2 md:order-1'
+            : 'w-full md:w-80 h-[45vh] md:h-full order-2'
         )}
       >
         {isMobileLandscape && (
@@ -203,11 +204,29 @@ export default function Sidebar({
               type="text"
               placeholder="Rechercher une chaîne..."
               aria-label="Rechercher une chaîne"
-              className="w-full bg-secondary border-0 rounded-xl py-2 pl-9 pr-4 text-sm text-foreground focus:ring-2 focus:ring-primary/30 focus:bg-secondary outline-none transition-all placeholder:text-muted-foreground"
+              className="h-9 w-full rounded-btn border border-input bg-background pl-9 pr-3 text-[13px] text-foreground outline-none transition-all placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring/60"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
+          {groups.length > 1 && (
+            <div role="group" aria-label="Filtrer par catégorie" className="mt-3 flex gap-2 overflow-x-auto scrollbar-none">
+              {['all', ...groups.slice(0, 12)].map((g) => (
+                <button
+                  key={g}
+                  type="button"
+                  aria-pressed={filter === g}
+                  onClick={() => setFilter(g)}
+                  className={cn(
+                    'h-8 shrink-0 rounded-btn px-3 text-xs font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/60',
+                    filter === g ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:text-foreground'
+                  )}
+                >
+                  {g === 'all' ? 'Toutes' : g}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="flex-1 overflow-y-auto custom-scrollbar p-2 [mask-image:linear-gradient(to_bottom,transparent,black_12px,black_calc(100%-12px),transparent)]">
@@ -230,13 +249,13 @@ export default function Sidebar({
                       tabIndex={focusedIndex === idx ? 0 : -1}
                       onFocus={() => setFocusedIndex(idx)}
                       onClick={() => onChannelSelect(channel)}
-                      aria-label={`Sélectionner la chaîne ${channel.name}`} className={cn("animate-in fade-in slide-in-from-left-2 duration-300 flex items-center gap-3 p-2 rounded-xl transition-all text-left group focus:outline-none focus-visible:ring-1 focus-visible:ring-primary", 
+                      aria-label={`Sélectionner la chaîne ${channel.name}`} className={cn("animate-in fade-in slide-in-from-left-2 duration-300 flex items-center gap-3 p-2 rounded-btn transition-all text-left group focus:outline-none focus-visible:ring-1 focus-visible:ring-primary", 
                         isSelected
                           ? 'bg-secondary text-foreground'
                           : 'hover:bg-secondary/60 text-muted-foreground hover:text-foreground'
                       )}
                     >
-                      <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center relative bg-secondary rounded-lg overflow-hidden">
+                      <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center relative bg-secondary rounded-btn overflow-hidden">
                         {channel.logo ? (
                           <img 
                             src={channel.logo} 
@@ -253,8 +272,8 @@ export default function Sidebar({
                         )}
                         
                         {/* Health Indicator */}
-                        <div className={cn("absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full border-[2px] border-background", 
-                          status === 'active' ? 'bg-green-500' : 
+                        <div className={cn("absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full border-2 border-card", 
+                          status === 'active' ? 'bg-mint' : 
                           status === 'dead' ? 'bg-destructive' : 'bg-yellow-500 animate-pulse'
                         )} />
                       </div>
@@ -262,13 +281,15 @@ export default function Sidebar({
                         <p className={cn("text-sm font-semibold truncate transition-colors", isSelected ? "text-foreground" : "group-hover:text-foreground")}>
                           {channel.name}
                         </p>
-                        <p className="text-[10px] font-medium text-muted-foreground truncate uppercase tracking-wider">
+                        <p className="text-xs text-muted-foreground truncate">
                           {channel.group || 'Général'}
                         </p>
                       </div>
-                      {isSelected && (
-                        <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                      )}
+                      {isSelected ? (
+                        <Badge variant="live">En cours</Badge>
+                      ) : status === 'checking' ? (
+                        <span className="text-xs text-muted-foreground">Vérification…</span>
+                      ) : null}
                     </button>
                   );
                 })}
@@ -286,7 +307,7 @@ export default function Sidebar({
         </div>
 
         <div className="px-4 py-3 bg-card flex flex-col gap-2 transition-colors duration-300">
-          <div className="flex justify-between items-center text-[10px] text-muted-foreground font-semibold uppercase tracking-widest">
+          <div className="flex justify-between items-center text-xs text-muted-foreground font-medium">
             <span>{filteredChannels.length} CHAÎNES</span>
             <span className="flex items-center gap-1.5 text-muted-foreground">
               LIVE <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
