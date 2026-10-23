@@ -36,6 +36,7 @@ export default function CommandPalette({ open, onOpenChange, channels, onSelectC
       { id: 'a-explore', group: 'Actions', label: 'Explorer les sources', hint: 'Action', icon: Zap, run: close(() => onNavigate('explore')) },
       { id: 'a-mosaic', group: 'Actions', label: 'Ouvrir la mosaïque', hint: 'Action', icon: Zap, run: close(onOpenMosaic) },
       { id: 'a-import', group: 'Actions', label: 'Importer une playlist', hint: 'Action', icon: Zap, run: close(onOpenImport) },
+      { id: 'a-activity', group: 'Actions', label: "Voir l'activité", hint: 'Action', icon: Zap, run: close(() => onNavigate('activity')) },
       { id: 'a-settings', group: 'Actions', label: 'Ouvrir les réglages', hint: 'Action', icon: Zap, run: close(() => onNavigate('settings')) },
     ] as Item[]).filter((a) => !q || a.label.toLowerCase().includes(q));
     const chans: Item[] = (q ? channels.filter((c) => c.name.toLowerCase().includes(q)) : [])

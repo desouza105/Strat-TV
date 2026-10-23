@@ -18,11 +18,11 @@ import { Tv, WifiOff, Globe, Sparkles, MapPin, Grid2x2, X, Maximize2, Timer, X a
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { addSession, WatchSession } from './utils/watchStats';
-import StatsModal from './components/StatsModal';
 import NavRail, { AppView } from './components/NavRail';
 import HomeView from './views/HomeView';
 import ExploreView from './views/ExploreView';
 import SettingsView from './views/SettingsView';
+import ActivityView from './views/ActivityView';
 import CommandPalette from './components/CommandPalette';
 import { useHighContrast } from './hooks/useHighContrast';
 import { ImportPlaylistDialog } from './components/dialogs/ImportPlaylistDialog';
@@ -48,7 +48,7 @@ export default function App() {
   // Watch Stats States
   const watchStartRef = useRef<number | null>(null);
   const watchChannelRef = useRef<IPTVChannel | null>(null);
-  const [isStatsOpen, setIsStatsOpen] = useState(false);
+  const [statsVersion, setStatsVersion] = useState(0);
 
   // Split View States
 
@@ -376,6 +376,27 @@ export default function App() {
   }, [checkChannelsHealth]);
 
 
+  // Enregistre la séance en cours (sans l'arrêter) pour que l'accueil et l'activité soient à jour.
+  const flushWatchSession = useCallback(() => {
+    if (watchStartRef.current && watchChannelRef.current) {
+      const duration = Math.round((Date.now() - watchStartRef.current) / 1000);
+      if (duration >= 1) {
+        addSession({
+          channelName: watchChannelRef.current.name,
+          channelGroup: watchChannelRef.current.group || 'Autre',
+          startTime: watchStartRef.current,
+          duration,
+        });
+        watchStartRef.current = Date.now();
+      }
+    }
+    setStatsVersion((v) => v + 1);
+  }, []);
+
+  useEffect(() => {
+    if (view === 'home' || view === 'activity') flushWatchSession();
+  }, [view, flushWatchSession]);
+
   // Le lecteur passe en mini-lecteur dès qu'on quitte la vue « Lecteur » ; « Agrandir » y revient.
   useEffect(() => {
     setIsMiniPlayer(view !== 'player' && !!selectedChannel);
@@ -425,7 +446,7 @@ export default function App() {
         isSplitView={isSplitView}
         onNavigate={(v) => { if (v === 'player' && view === 'player' && isSplitView) toggleSplitView(); setView(v); }}
         onOpenMosaic={openMosaic}
-        onOpenStats={() => setIsStatsOpen(true)}
+        onOpenStats={() => setView('activity')}
         onOpenSearch={() => setIsSearchOpen(true)}
       />
 
@@ -441,8 +462,11 @@ export default function App() {
             onLoadPlaylist={loadPlaylist}
             onExplore={() => setView('explore')}
             onImport={() => setIsImportOpen(true)}
+            statsVersion={statsVersion}
           />
         )}
+
+        {view === 'activity' && <ActivityView statsVersion={statsVersion} />}
 
         {view === 'explore' && (
           <ExploreView
@@ -541,10 +565,6 @@ export default function App() {
           scrollbar-width: none;
         }
       `}</style>
-      <StatsModal 
-        isOpen={isStatsOpen} 
-        onClose={() => setIsStatsOpen(false)} 
-      />
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { Home, Compass, Tv, LayoutGrid, Activity, Search, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export type AppView = 'home' | 'explore' | 'player' | 'settings';
+export type AppView = 'home' | 'explore' | 'player' | 'settings' | 'activity';
 
 interface NavRailProps {
   view: AppView;
@@ -20,7 +20,7 @@ export default function NavRail({ view, isSplitView, onNavigate, onOpenMosaic, o
     { id: 'explore', label: 'Explorer', icon: Compass, active: view === 'explore', onClick: () => onNavigate('explore') },
     { id: 'player', label: 'Lecteur', icon: Tv, active: view === 'player' && !isSplitView, onClick: () => onNavigate('player') },
     { id: 'mosaic', label: 'Mosaïque', icon: LayoutGrid, active: view === 'player' && isSplitView, onClick: onOpenMosaic },
-    { id: 'stats', label: 'Activité', icon: Activity, active: false, onClick: onOpenStats },
+    { id: 'stats', label: 'Activité', icon: Activity, active: view === 'activity', onClick: onOpenStats },
     { id: 'settings', label: 'Réglages', icon: Settings, active: view === 'settings', onClick: () => onNavigate('settings') },
   ];
 

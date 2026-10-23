@@ -24,6 +24,7 @@ interface HomeViewProps {
   onLoadPlaylist: (url: string) => void;
   onExplore: () => void;
   onImport: () => void;
+  statsVersion?: number;
 }
 
 const initials = (name: string) => name.replace(/[^\p{L}\p{N} ]/gu, '').trim().slice(0, 2).toUpperCase() || 'TV';
@@ -53,7 +54,7 @@ function Tile({ channel, active, onClick }: { channel: IPTVChannel; active?: boo
 }
 
 export default function HomeView({
-  channels, selectedChannel, playlistName, isLoading, onWatch, onSelectChannel, onLoadPlaylist, onExplore, onImport,
+  channels, selectedChannel, playlistName, isLoading, onWatch, onSelectChannel, onLoadPlaylist, onExplore, onImport, statsVersion = 0,
 }: HomeViewProps) {
   const [, force] = useState(0);
   const today = useMemo(() => {
@@ -61,7 +62,7 @@ export default function HomeView({
     return d.charAt(0).toUpperCase() + d.slice(1);
   }, []);
 
-  const week = useMemo(() => getWeeklyData(), []);
+  const week = useMemo(() => getWeeklyData(), [statsVersion]);
   const weekSeconds = week.reduce((a, d) => a + d.minutes, 0) * 60;
   const maxMinutes = Math.max(1, ...week.map((d) => d.minutes));
 
@@ -72,7 +73,7 @@ export default function HomeView({
       .forEach((s) => { if (!names.includes(s.channelName)) names.push(s.channelName); });
     const found = names.map((n) => channels.find((c) => c.name === n)).filter(Boolean) as IPTVChannel[];
     return (found.length ? found : channels).slice(0, 3);
-  }, [channels]);
+  }, [channels, statsVersion]);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto p-5 md:py-7 md:pr-9 md:pl-2">
