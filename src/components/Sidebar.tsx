@@ -3,13 +3,95 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, memo } from 'react';
 import { Search, Tv, MapPin, X } from 'lucide-react';
 import { IPTVChannel } from '../types/iptv';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { Heart } from 'lucide-react';
+
+interface ChannelRowProps {
+  channel: IPTVChannel;
+  idx: number;
+  status: 'checking' | 'active' | 'dead';
+  isSelected: boolean;
+  fav: boolean;
+  focused: boolean;
+  onSelect: (channel: IPTVChannel) => void;
+  onFocusIndex: (idx: number) => void;
+  onToggleFavorite?: (channel: IPTVChannel) => void;
+}
+
+/** Ligne de chaîne mémoïsée : seule la ligne dont les props changent est re-rendue. */
+const ChannelRow = memo(function ChannelRow({ channel, idx, status, isSelected, fav, focused, onSelect, onFocusIndex, onToggleFavorite }: ChannelRowProps) {
+  return (
+                    <div className="relative group/row [content-visibility:auto] [contain-intrinsic-size:auto_56px]">
+                    <button
+                      style={{ animationFillMode: "both", animationDelay: `${Math.min(idx * 20, 1000)}ms` }}
+                      id={`channel-btn-${idx}`}
+                      tabIndex={focused ? 0 : -1}
+                      onFocus={() => onFocusIndex(idx)}
+                      onClick={() => onSelect(channel)}
+                      aria-label={`Sélectionner la chaîne ${channel.name}`} className={cn("animate-in fade-in slide-in-from-left-2 duration-300 flex w-full items-center gap-3 p-2 pr-11 rounded-btn transition-all text-left group focus:outline-none focus-visible:ring-1 focus-visible:ring-primary", 
+                        isSelected
+                          ? 'bg-secondary text-foreground'
+                          : 'hover:bg-secondary/60 text-muted-foreground hover:text-foreground'
+                      )}
+                    >
+                      <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center relative bg-secondary rounded-btn overflow-hidden">
+                        {channel.logo ? (
+                          <img 
+                            src={channel.logo} 
+                            alt={channel.name} 
+                            className="w-full h-full object-contain p-1"
+                            referrerPolicy="no-referrer"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                              e.currentTarget.parentElement!.innerHTML = '<div class="text-muted-foreground"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-tv"><rect width="20" height="15" x="2" y="7" rx="2" ry="2"/><polyline points="17 2 12 7 7 2"/></svg></div>';
+                            }}
+                          />
+                        ) : (
+                          <Tv size={20} className="text-muted-foreground" />
+                        )}
+                        
+                        {/* Health Indicator */}
+                        <div className={cn("absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full border-2 border-card", 
+                          status === 'active' ? 'bg-mint' : 
+                          status === 'dead' ? 'bg-destructive' : 'bg-yellow-500'
+                        )} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={cn("text-sm font-semibold truncate transition-colors", isSelected ? "text-foreground" : "group-hover:text-foreground")}>
+                          {channel.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {channel.group || 'Général'}
+                        </p>
+                      </div>
+                      {isSelected ? (
+                        <Badge variant="live">En cours</Badge>
+                      ) : status === 'checking' ? (
+                        <span className="text-xs text-muted-foreground">Vérification…</span>
+                      ) : null}
+                    </button>
+                    {onToggleFavorite && (
+                      <button
+                        type="button"
+                        aria-pressed={fav}
+                        aria-label={fav ? `Retirer ${channel.name} des favoris` : `Ajouter ${channel.name} aux favoris`}
+                        onClick={() => onToggleFavorite(channel)}
+                        className={cn(
+                          'absolute right-2 top-1/2 grid size-8 -translate-y-1/2 place-items-center rounded-btn outline-none transition-opacity hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-ring/60',
+                          fav ? 'text-mint' : 'text-muted-foreground md:opacity-0 md:group-hover/row:opacity-100 md:focus-visible:opacity-100'
+                        )}
+                      >
+                        <Heart size={16} fill={fav ? 'currentColor' : 'none'} aria-hidden="true" />
+                      </button>
+                    )}
+                    </div>
+  );
+});
 
 interface SidebarProps {
   channels: IPTVChannel[];
@@ -248,70 +330,18 @@ export default function Sidebar({
                   const fav = !!isFavorite?.(channel.url);
                   
                   return (
-                    <div key={channel.id + idx} className="relative group/row">
-                    <button
-                      style={{ animationFillMode: "both", animationDelay: `${Math.min(idx * 20, 1000)}ms` }}
-                      id={`channel-btn-${idx}`}
-                      tabIndex={focusedIndex === idx ? 0 : -1}
-                      onFocus={() => setFocusedIndex(idx)}
-                      onClick={() => onChannelSelect(channel)}
-                      aria-label={`Sélectionner la chaîne ${channel.name}`} className={cn("animate-in fade-in slide-in-from-left-2 duration-300 flex w-full items-center gap-3 p-2 pr-11 rounded-btn transition-all text-left group focus:outline-none focus-visible:ring-1 focus-visible:ring-primary", 
-                        isSelected
-                          ? 'bg-secondary text-foreground'
-                          : 'hover:bg-secondary/60 text-muted-foreground hover:text-foreground'
-                      )}
-                    >
-                      <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center relative bg-secondary rounded-btn overflow-hidden">
-                        {channel.logo ? (
-                          <img 
-                            src={channel.logo} 
-                            alt={channel.name} 
-                            className="w-full h-full object-contain p-1"
-                            referrerPolicy="no-referrer"
-                            onError={(e) => {
-                              e.currentTarget.style.display = 'none';
-                              e.currentTarget.parentElement!.innerHTML = '<div class="text-muted-foreground"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-tv"><rect width="20" height="15" x="2" y="7" rx="2" ry="2"/><polyline points="17 2 12 7 7 2"/></svg></div>';
-                            }}
-                          />
-                        ) : (
-                          <Tv size={20} className="text-muted-foreground" />
-                        )}
-                        
-                        {/* Health Indicator */}
-                        <div className={cn("absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full border-2 border-card", 
-                          status === 'active' ? 'bg-mint' : 
-                          status === 'dead' ? 'bg-destructive' : 'bg-yellow-500 animate-pulse'
-                        )} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className={cn("text-sm font-semibold truncate transition-colors", isSelected ? "text-foreground" : "group-hover:text-foreground")}>
-                          {channel.name}
-                        </p>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {channel.group || 'Général'}
-                        </p>
-                      </div>
-                      {isSelected ? (
-                        <Badge variant="live">En cours</Badge>
-                      ) : status === 'checking' ? (
-                        <span className="text-xs text-muted-foreground">Vérification…</span>
-                      ) : null}
-                    </button>
-                    {onToggleFavorite && (
-                      <button
-                        type="button"
-                        aria-pressed={fav}
-                        aria-label={fav ? `Retirer ${channel.name} des favoris` : `Ajouter ${channel.name} aux favoris`}
-                        onClick={() => onToggleFavorite(channel)}
-                        className={cn(
-                          'absolute right-2 top-1/2 grid size-8 -translate-y-1/2 place-items-center rounded-btn outline-none transition-opacity hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-ring/60',
-                          fav ? 'text-mint' : 'text-muted-foreground md:opacity-0 md:group-hover/row:opacity-100 md:focus-visible:opacity-100'
-                        )}
-                      >
-                        <Heart size={16} fill={fav ? 'currentColor' : 'none'} aria-hidden="true" />
-                      </button>
-                    )}
-                    </div>
+                    <ChannelRow
+                      key={channel.id + idx}
+                      channel={channel}
+                      idx={idx}
+                      status={status}
+                      isSelected={isSelected}
+                      fav={fav}
+                      focused={focusedIndex === idx}
+                      onSelect={onChannelSelect}
+                      onFocusIndex={setFocusedIndex}
+                      onToggleFavorite={onToggleFavorite}
+                    />
                   );
                 })}
               

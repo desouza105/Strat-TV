@@ -30,6 +30,8 @@ interface VideoPlayerProps {
   miniPlayer?: boolean;
   /** Les réglages (volume, qualité, pistes, minuterie, PiP, Cast) sont affichés ailleurs (cartes du cockpit). */
   externalControls?: boolean;
+  /** Limite la hauteur au viewport (bandes noires sur les côtés) pour garder le cockpit visible. */
+  fitViewport?: boolean;
   onStateChange?: (state: PlayerSnapshot) => void;
 }
 
@@ -61,7 +63,7 @@ export interface VideoPlayerRef {
   setSubtitleTrack: (id: number) => void;
 }
 
-const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, onError, onStartSleepTimer, sleepTimerActive, miniPlayer = false, externalControls = false, onStateChange }, ref) => {
+const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, onError, onStartSleepTimer, sleepTimerActive, miniPlayer = false, externalControls = false, fitViewport = false, onStateChange }, ref) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -579,7 +581,10 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
   };
 
   return (
-    <div className="relative w-full aspect-video bg-black group overflow-hidden rounded-card border border-white/[0.06]">
+    <div
+      className="relative w-full aspect-video bg-black group overflow-hidden rounded-card border border-white/[0.06]"
+      style={fitViewport ? { maxHeight: 'calc(100vh - 380px)', minHeight: 240 } : undefined}
+    >
       {castState === "connected" && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 z-10 p-6 text-center">
           <Cast className="w-16 h-16 text-primary mb-4 animate-pulse" />
@@ -926,4 +931,5 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
   );
 });
 
-export default VideoPlayer;
+// Mémoïsé : ne se re-rend que si ses propres props changent (évite de rejouer tout le lecteur à chaque tick du volume ou du favori).
+export default React.memo(VideoPlayer);
