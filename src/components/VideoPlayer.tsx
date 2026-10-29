@@ -28,6 +28,25 @@ interface VideoPlayerProps {
   onStartSleepTimer?: (minutes: number) => void;
   sleepTimerActive?: boolean;
   miniPlayer?: boolean;
+  /** Les réglages (volume, qualité, pistes, minuterie, PiP, Cast) sont affichés ailleurs (cartes du cockpit). */
+  externalControls?: boolean;
+  onStateChange?: (state: PlayerSnapshot) => void;
+}
+
+export interface PlayerSnapshot {
+  isPlaying: boolean;
+  isMuted: boolean;
+  volume: number;
+  boostAvailable: boolean;
+  levels: { index: number; height: number; bitrate: number }[];
+  currentLevel: number;
+  audioTracks: { id: number; name: string; lang: string }[];
+  subtitleTracks: { id: number; name: string; lang: string }[];
+  activeAudio: number;
+  activeSubtitle: number;
+  isPipAvailable: boolean;
+  isCastAvailable: boolean;
+  castState: 'disconnected' | 'connecting' | 'connected';
 }
 
 export interface VideoPlayerRef {
@@ -35,9 +54,14 @@ export interface VideoPlayerRef {
   toggleMute: () => void;
   toggleFullscreen: () => void;
   setVolume: (value: number) => void;
+  togglePip: () => void;
+  toggleCast: () => void;
+  setQuality: (index: number) => void;
+  setAudioTrack: (id: number) => void;
+  setSubtitleTrack: (id: number) => void;
 }
 
-const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, onError, onStartSleepTimer, sleepTimerActive, miniPlayer = false }, ref) => {
+const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, onError, onStartSleepTimer, sleepTimerActive, miniPlayer = false, externalControls = false, onStateChange }, ref) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -192,6 +216,11 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
     togglePlay,
     toggleMute,
     toggleFullscreen,
+    togglePip,
+    toggleCast,
+    setQuality: (index: number) => changeQuality(index),
+    setAudioTrack: (id: number) => handleAudioChange(id),
+    setSubtitleTrack: (id: number) => handleSubtitleChange(id),
     setVolume: (value: number) => {
       if (videoRef.current) {
         videoRef.current.volume = Math.min(value, 1);
@@ -518,6 +547,17 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
     }
   };
 
+  // Publie l'état du lecteur pour les cartes du cockpit.
+  const onStateChangeRef = useRef(onStateChange);
+  useEffect(() => { onStateChangeRef.current = onStateChange; }, [onStateChange]);
+  useEffect(() => {
+    onStateChangeRef.current?.({
+      isPlaying, isMuted, volume, boostAvailable, levels, currentLevel,
+      audioTracks, subtitleTracks, activeAudio, activeSubtitle,
+      isPipAvailable, isCastAvailable, castState,
+    });
+  }, [isPlaying, isMuted, volume, boostAvailable, levels, currentLevel, audioTracks, subtitleTracks, activeAudio, activeSubtitle, isPipAvailable, isCastAvailable, castState]);
+
   const changeQuality = (index: number) => {
     if (hlsRef.current) {
       hlsRef.current.currentLevel = index;
@@ -539,7 +579,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
   };
 
   return (
-    <div className="relative w-full aspect-video bg-black group overflow-hidden rounded-xl shadow-2xl">
+    <div className="relative w-full aspect-video bg-black group overflow-hidden rounded-card border border-white/[0.06]">
       {castState === "connected" && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 z-10 p-6 text-center">
           <Cast className="w-16 h-16 text-primary mb-4 animate-pulse" />
@@ -605,7 +645,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                 applyBoost(1);
               }
             }}
-            className="flex items-center gap-2 bg-black/80 hover:bg-black text-white px-4 py-2 rounded-full backdrop-blur-md border border-white/20 shadow-xl transition-all"
+            className="flex items-center gap-2 bg-black/80 hover:bg-black text-white px-4 py-2 rounded-btn backdrop-blur-md border border-white/20 shadow-xl transition-all"
           >
             <VolumeX className="w-4 h-4" />
             <span className="text-xs font-bold uppercase tracking-wider">Activer le son</span>
@@ -630,7 +670,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
             <div className="flex items-center gap-4">
               <button 
                 onClick={togglePlay}
-                className="p-2 flex items-center justify-center min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 hover:bg-white/20 rounded-full transition-colors text-foreground"
+                className="p-2 flex items-center justify-center min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 hover:bg-white/10 rounded-btn transition-colors text-foreground"
                 aria-label={isPlaying ? "Mettre en pause" : "Lire"}
               >
                 {isPlaying ? <Pause className="fill-current w-6 h-6" /> : <Play className="fill-current w-6 h-6" />}
@@ -639,7 +679,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
               <div className="hidden sm:flex items-center gap-2">
                 <button 
                   onClick={toggleMute}
-                  className="p-2 flex items-center justify-center min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 hover:bg-white/20 rounded-full transition-colors text-foreground"
+                  className="p-2 flex items-center justify-center min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 hover:bg-white/10 rounded-btn transition-colors text-foreground"
                   aria-label={isMuted || volume === 0 ? "Activer le son" : "Couper le son"}
                 >
                   {isMuted || volume === 0 ? <VolumeX className="w-6 h-6" /> : <Volume2 className="w-6 h-6" />}
@@ -652,9 +692,9 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                   step="0.05"
                   value={volume}
                   onChange={handleVolumeChange}
-                  className="w-24 h-1 bg-white/30 rounded-lg appearance-none cursor-pointer accent-primary"
+                  className={cn("w-24 h-1 bg-white/30 rounded-lg appearance-none cursor-pointer accent-primary", externalControls && "hidden")}
                 />
-                {volume > 1 && (
+                {!externalControls && volume > 1 && (
                   <span className="text-[10px] font-semibold text-muted-foreground tabular-nums">
                     {Math.round(volume * 100)}%
                   </span>
@@ -668,11 +708,11 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
 
             <div className="flex items-center gap-2">
               {/* Quality Settings */}
-              {levels.length > 0 && (
+              {!externalControls && levels.length > 0 && (
                 <div className="relative">
                   <button 
                     onClick={() => setIsQualityOpen(!isQualityOpen)}
-                    className="flex items-center justify-center gap-1.5 px-3 py-1.5 min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 hover:bg-white/20 rounded-lg transition-colors text-foreground text-[10px] font-semibold uppercase tracking-widest border border-white/20"
+                    className="flex items-center justify-center gap-1.5 px-3 py-1.5 min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 hover:bg-white/20 rounded-lg transition-colors text-foreground text-[13px] font-medium border border-white/20"
                     aria-label="Paramètres de qualité"
                   >
                     <Settings className={cn("w-3.5 h-3.5", isQualityOpen && "animate-spin-slow")} />
@@ -708,10 +748,10 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                 </div>
               )}
 
-              {isPipAvailable && (
+              {!externalControls && isPipAvailable && (
                 <button 
                   onClick={togglePip}
-                  className="p-2 flex items-center justify-center min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 hover:bg-white/20 rounded-full transition-colors text-foreground"
+                  className="p-2 flex items-center justify-center min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 hover:bg-white/10 rounded-btn transition-colors text-foreground"
                   title="Miniature (PiP)"
                   aria-label="Afficher en mode miniature (PiP)"
                 >
@@ -719,10 +759,10 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                 </button>
               )}
 
-              {isCastAvailable && (
+              {!externalControls && isCastAvailable && (
                 <button 
                   onClick={toggleCast}
-                  className={cn("p-2 flex items-center justify-center min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 hover:bg-white/20 rounded-full transition-colors", castState === "connected" ? "text-primary" : "text-foreground")}
+                  className={cn("p-2 flex items-center justify-center min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 hover:bg-white/10 rounded-btn transition-colors", castState === "connected" ? "text-primary" : "text-foreground")}
                   title="Diffuser"
                   aria-label="Diffuser sur un autre appareil"
                 >
@@ -730,7 +770,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                 </button>
               )}
 
-              {(audioTracks.length > 1 || subtitleTracks.length > 0) && (
+              {!externalControls && (audioTracks.length > 1 || subtitleTracks.length > 0) && (
                 <div className="relative">
                   <button
                     onClick={() => setShowTracksMenu(!showTracksMenu)}
@@ -831,7 +871,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                 </div>
               )}
 
-              <div className="relative">
+              <div className={cn("relative", externalControls && "hidden")}>
                 <button
                   onClick={() => setShowSleepMenu(!showSleepMenu)}
                   className={cn("p-2 min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 flex items-center justify-center rounded-lg transition-all hover:bg-white/10", sleepTimerActive ? "text-primary" : "text-muted-foreground")}
@@ -872,7 +912,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
 
               <button 
                 onClick={toggleFullscreen}
-                className="p-2 flex items-center justify-center min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 hover:bg-white/20 rounded-full transition-colors text-foreground"
+                className="p-2 flex items-center justify-center min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 hover:bg-white/10 rounded-btn transition-colors text-foreground"
                 aria-label="Basculer le plein écran"
               >
                 <Maximize className="w-6 h-6" />

@@ -8,7 +8,6 @@ import { GlobalPlayer } from "./components/GlobalPlayer";
  */
 
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import VideoPlayer, { VideoPlayerRef } from './components/VideoPlayer';
 import SplashScreen from './components/SplashScreen';
@@ -19,14 +18,33 @@ import { Tv, WifiOff, Globe, Sparkles, MapPin, Grid2x2, X, Maximize2, Timer, X a
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { addSession, WatchSession } from './utils/watchStats';
-import StatsModal from './components/StatsModal';
+import NavRail, { AppView } from './components/NavRail';
+import HomeView from './views/HomeView';
+import ExploreView from './views/ExploreView';
+import SettingsView from './views/SettingsView';
+import ActivityView from './views/ActivityView';
+import TvView from './views/TvView';
+import FavoritesView from './views/FavoritesView';
+import { useFavorites } from './hooks/useFavorites';
+import CommandPalette from './components/CommandPalette';
+import { useHighContrast } from './hooks/useHighContrast';
+import { ImportPlaylistDialog } from './components/dialogs/ImportPlaylistDialog';
+import { PlaylistSource, saveCustomPlaylist } from './constants/portal_data';
 import { useMediaQuery } from './hooks/useMediaQuery';
 
 export default function App() {
   const isMobileLandscape = useMediaQuery('(orientation: landscape) and (max-height: 500px)');
+  const [view, setView] = useState<AppView>('home');
+  const viewRef = useRef<AppView>('home');
+  useEffect(() => { viewRef.current = view; }, [view]);
+  const [isImportOpen, setIsImportOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [highContrast, setHighContrast] = useHighContrast();
+  const { favorites, isFavorite, toggleFavorite } = useFavorites();
   const [isLandscapeSidebarOpen, setIsLandscapeSidebarOpen] = useState(false);
   const [channels, setChannels] = useState<IPTVChannel[]>([]);
-  const { selectedChannel, setSelectedChannel, isSplitView, setIsSplitView, splitChannels, setSplitChannels, activeSplitIndex, setActiveSplitIndex } = useGlobalPlayer();
+  const searchChannels = useMemo(() => [...channels, ...favorites.filter((f) => !channels.some((c) => c.url === f.url))], [channels, favorites]);
+  const { selectedChannel, setSelectedChannel, isMiniPlayer, setIsMiniPlayer, isSplitView, setIsSplitView, splitChannels, setSplitChannels, activeSplitIndex, setActiveSplitIndex } = useGlobalPlayer();
   const [currentPlaylistUrl, setCurrentPlaylistUrl] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,7 +55,7 @@ export default function App() {
   // Watch Stats States
   const watchStartRef = useRef<number | null>(null);
   const watchChannelRef = useRef<IPTVChannel | null>(null);
-  const [isStatsOpen, setIsStatsOpen] = useState(false);
+  const [statsVersion, setStatsVersion] = useState(0);
 
   // Split View States
 
@@ -193,6 +211,8 @@ export default function App() {
     const handleKeyDown = (e: KeyboardEvent) => {
       const isInput = (e.target as HTMLElement).tagName === 'INPUT';
       
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); setIsSearchOpen(true); return; }
+
       // Security shortcuts
       if (e.key === 'F12') e.preventDefault();
       if (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) e.preventDefault();
@@ -220,6 +240,10 @@ export default function App() {
         }
         if (e.key === 'ArrowLeft') {
           switchChannel('prev');
+        }
+        if (viewRef.current === 'player' && document.activeElement === document.body) {
+          if (e.key === 'ArrowDown') { e.preventDefault(); switchChannel('next'); }
+          if (e.key === 'ArrowUp') { e.preventDefault(); switchChannel('prev'); }
         }
         // Volume 1-9
         if (/^[1-9]$/.test(e.key)) {
@@ -362,65 +386,204 @@ export default function App() {
     }
   }, [checkChannelsHealth]);
 
+
+  // Enregistre la séance en cours (sans l'arrêter) pour que l'accueil et l'activité soient à jour.
+  const flushWatchSession = useCallback(() => {
+    if (watchStartRef.current && watchChannelRef.current) {
+      const duration = Math.round((Date.now() - watchStartRef.current) / 1000);
+      if (duration >= 1) {
+        addSession({
+          channelName: watchChannelRef.current.name,
+          channelGroup: watchChannelRef.current.group || 'Autre',
+          startTime: watchStartRef.current,
+          duration,
+        });
+        watchStartRef.current = Date.now();
+      }
+    }
+    setStatsVersion((v) => v + 1);
+  }, []);
+
+  useEffect(() => {
+    if (view === 'home' || view === 'activity') flushWatchSession();
+  }, [view, flushWatchSession]);
+
+  // Le lecteur passe en mini-lecteur dès qu'on quitte la vue « Lecteur » ; « Agrandir » y revient.
+  useEffect(() => {
+    setIsMiniPlayer(view !== 'player' && view !== 'tv' && !!selectedChannel);
+  }, [view, selectedChannel]);
+
+  useEffect(() => {
+    if (!isMiniPlayer && view !== 'player' && view !== 'tv' && selectedChannel) setView('player');
+  }, [isMiniPlayer]);
+
+  const openMosaic = useCallback(() => {
+    setView('player');
+    if (!isSplitView) toggleSplitView();
+  }, [isSplitView, toggleSplitView]);
+
+  const handleImportSubmit = useCallback((url: string, name: string) => {
+    const playlist: PlaylistSource = { name: name.trim() || 'Ma Playlist', url: url.trim(), category: 'Country', code: '' };
+    saveCustomPlaylist(playlist);
+    loadPlaylist(url.trim());
+    setIsImportOpen(false);
+    setView('player');
+  }, [loadPlaylist]);
+
+  const loadAndWatch = useCallback((url: string) => {
+    loadPlaylist(url);
+    setView('player');
+  }, [loadPlaylist]);
+
   const handlePlayerError = useCallback((playerError: string) => {
     console.log('Player error:', playerError);
   }, []);
 
+  const globalPlayerProps = {
+    playlistName, error, sleepTimerActive, sleepTimerRemaining,
+    formatRemaining, cancelSleepTimer, startSleepTimer, handlePlayerError,
+  };
+
   return (
-    <div className="flex flex-col h-screen bg-background text-foreground transition-colors duration-300 selection:bg-primary/20">
+    <div className="flex h-screen flex-col bg-background text-foreground transition-colors duration-300 selection:bg-primary/20 md:flex-row">
       <AnimatePresence>
         {isAppLoading && (
           <SplashScreen onComplete={() => setIsAppLoading(false)} />
         )}
       </AnimatePresence>
 
-      <Header 
-        onLoadPlaylist={loadPlaylist} 
-        isLoading={isLoading} 
-        currentPlaylistName={playlistName}
+      {view !== 'tv' && <NavRail
+        view={view}
         isSplitView={isSplitView}
-        onToggleSplitView={toggleSplitView}
-        onOpenStats={() => setIsStatsOpen(true)}
-      />
-      
-      <main className="flex flex-col md:flex-row flex-1 overflow-hidden relative">
-        <Sidebar 
-          channels={channels} 
-          selectedChannel={isSplitView ? splitChannels[activeSplitIndex] : selectedChannel} 
-          onChannelSelect={handleChannelSelect} 
-          isLoading={isLoading}
-          channelStatus={channelStatus}
-          isMobileLandscape={isMobileLandscape}
-          isOpen={isLandscapeSidebarOpen}
-          onClose={() => setIsLandscapeSidebarOpen(false)}
-        />
+        onNavigate={(v) => { if (v === 'player' && view === 'player' && isSplitView) toggleSplitView(); setView(v); }}
+        onOpenMosaic={openMosaic}
+        onOpenStats={() => setView('activity')}
+        onOpenSearch={() => setIsSearchOpen(true)}
+      />}
 
-        <section className={cn("flex-1 flex flex-col items-center justify-center p-4 md:p-8 bg-background relative overflow-y-auto custom-scrollbar transition-colors duration-300 order-1 md:order-2", isMobileLandscape ? "min-h-0" : "min-h-[50vh]")}>
-          {isMobileLandscape && (
-             <button 
-               onClick={() => setIsLandscapeSidebarOpen(true)}
-               className="absolute top-4 left-4 z-40 p-2 bg-card/80 backdrop-blur-md rounded-xl border border-border shadow-lg md:hidden"
-               aria-label="Ouvrir la liste des chaînes"
-             >
-               <Menu size={20} className="text-foreground" />
-             </button>
-          )}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/5 blur-[120px] rounded-full pointer-events-none" />
-
-          
-          <GlobalPlayer 
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        {view === 'home' && (
+          <HomeView
+            channels={channels}
+            selectedChannel={selectedChannel}
             playlistName={playlistName}
-            error={error}
-            sleepTimerActive={sleepTimerActive}
-            sleepTimerRemaining={sleepTimerRemaining}
-            formatRemaining={formatRemaining}
-            cancelSleepTimer={cancelSleepTimer}
-            startSleepTimer={startSleepTimer}
-            handlePlayerError={handlePlayerError}
+            isLoading={isLoading}
+            onWatch={() => setView('player')}
+            onSelectChannel={handleChannelSelect}
+            onLoadPlaylist={loadPlaylist}
+            onExplore={() => setView('explore')}
+            onImport={() => setIsImportOpen(true)}
+            statsVersion={statsVersion}
+            onTvMode={() => setView('tv')}
+            favorites={favorites}
+            onOpenFavorites={() => setView('favorites')}
+            onWatchChannel={(c) => { handleChannelSelect(c); setView('player'); }}
           />
+        )}
 
-        </section>
-      </main>
+        {view === 'tv' && (
+          <TvView
+            channels={channels}
+            selectedChannel={selectedChannel}
+            playlistName={playlistName}
+            onWatch={() => setView('player')}
+            onSelectChannel={setSelectedChannel}
+            onExit={() => setView('home')}
+          />
+        )}
+
+        {view === 'favorites' && (
+          <FavoritesView
+            favorites={favorites}
+            selectedChannel={selectedChannel}
+            onWatch={(c) => { handleChannelSelect(c); setView('player'); }}
+            onRemove={toggleFavorite}
+            onExplore={() => setView('explore')}
+          />
+        )}
+
+        {view === 'activity' && <ActivityView statsVersion={statsVersion} />}
+
+        {view === 'explore' && (
+          <ExploreView
+            playlistName={playlistName}
+            isLoading={isLoading}
+            onLoadPlaylist={loadAndWatch}
+            onImport={() => setIsImportOpen(true)}
+          />
+        )}
+
+        {view === 'settings' && (
+          <SettingsView
+            playlistName={playlistName}
+            isLoading={isLoading}
+            channelStatus={channelStatus}
+            highContrast={highContrast}
+            onHighContrastChange={setHighContrast}
+            onLoadPlaylist={loadAndWatch}
+            onRefresh={() => currentPlaylistUrl && loadPlaylist(currentPlaylistUrl)}
+            onImport={() => setIsImportOpen(true)}
+          />
+        )}
+
+        {view !== 'player' && view !== 'tv' && selectedChannel && isMiniPlayer && <GlobalPlayer {...globalPlayerProps} />}
+
+        {view === 'player' && (
+          <main className="relative flex flex-1 flex-col gap-5 overflow-hidden p-4 md:flex-row md:py-7 md:pr-9 md:pl-2">
+            <section className={cn('relative order-1 flex min-w-0 flex-1 flex-col gap-4 overflow-y-auto custom-scrollbar', isMobileLandscape ? 'min-h-0' : 'min-h-[40vh]')}>
+              {isMobileLandscape && (
+                <button
+                  onClick={() => setIsLandscapeSidebarOpen(true)}
+                  className="absolute left-0 top-0 z-40 rounded-btn border border-border bg-card/80 p-2 backdrop-blur-md md:hidden"
+                  aria-label="Ouvrir la liste des chaînes"
+                >
+                  <Menu size={20} className="text-foreground" />
+                </button>
+              )}
+              <GlobalPlayer
+                {...globalPlayerProps}
+                channels={channels}
+                onZap={switchChannel}
+                isFavorite={selectedChannel ? isFavorite(selectedChannel.url) : false}
+                onToggleFavorite={selectedChannel ? () => toggleFavorite(selectedChannel) : undefined}
+                onExplore={() => setView('explore')}
+                onImport={() => setIsImportOpen(true)}
+                onRetry={currentPlaylistUrl ? () => loadPlaylist(currentPlaylistUrl) : undefined}
+              />
+            </section>
+
+            <Sidebar
+              channels={channels}
+              selectedChannel={isSplitView ? splitChannels[activeSplitIndex] : selectedChannel}
+              onChannelSelect={handleChannelSelect}
+              isLoading={isLoading}
+              channelStatus={channelStatus}
+              isFavorite={isFavorite}
+              onToggleFavorite={toggleFavorite}
+              isMobileLandscape={isMobileLandscape}
+              isOpen={isLandscapeSidebarOpen}
+              onClose={() => setIsLandscapeSidebarOpen(false)}
+            />
+          </main>
+        )}
+      </div>
+
+      <CommandPalette
+        open={isSearchOpen}
+        onOpenChange={setIsSearchOpen}
+        channels={searchChannels}
+        onSelectChannel={(c) => { handleChannelSelect(c); setView('player'); }}
+        onLoadSource={loadAndWatch}
+        onNavigate={setView}
+        onOpenImport={() => setIsImportOpen(true)}
+        onOpenMosaic={openMosaic}
+      />
+
+      <ImportPlaylistDialog
+        isOpen={isImportOpen}
+        onOpenChange={setIsImportOpen}
+        onSubmit={handleImportSubmit}
+      />
 
       <style>{`
         .custom-scrollbar::-webkit-scrollbar {
@@ -444,10 +607,6 @@ export default function App() {
           scrollbar-width: none;
         }
       `}</style>
-      <StatsModal 
-        isOpen={isStatsOpen} 
-        onClose={() => setIsStatsOpen(false)} 
-      />
     </div>
   );
 }
