@@ -28,6 +28,25 @@ interface VideoPlayerProps {
   onStartSleepTimer?: (minutes: number) => void;
   sleepTimerActive?: boolean;
   miniPlayer?: boolean;
+  /** Les réglages (volume, qualité, pistes, minuterie, PiP, Cast) sont affichés ailleurs (cartes du cockpit). */
+  externalControls?: boolean;
+  onStateChange?: (state: PlayerSnapshot) => void;
+}
+
+export interface PlayerSnapshot {
+  isPlaying: boolean;
+  isMuted: boolean;
+  volume: number;
+  boostAvailable: boolean;
+  levels: { index: number; height: number; bitrate: number }[];
+  currentLevel: number;
+  audioTracks: { id: number; name: string; lang: string }[];
+  subtitleTracks: { id: number; name: string; lang: string }[];
+  activeAudio: number;
+  activeSubtitle: number;
+  isPipAvailable: boolean;
+  isCastAvailable: boolean;
+  castState: 'disconnected' | 'connecting' | 'connected';
 }
 
 export interface VideoPlayerRef {
@@ -35,9 +54,14 @@ export interface VideoPlayerRef {
   toggleMute: () => void;
   toggleFullscreen: () => void;
   setVolume: (value: number) => void;
+  togglePip: () => void;
+  toggleCast: () => void;
+  setQuality: (index: number) => void;
+  setAudioTrack: (id: number) => void;
+  setSubtitleTrack: (id: number) => void;
 }
 
-const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, onError, onStartSleepTimer, sleepTimerActive, miniPlayer = false }, ref) => {
+const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, onError, onStartSleepTimer, sleepTimerActive, miniPlayer = false, externalControls = false, onStateChange }, ref) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -192,6 +216,11 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
     togglePlay,
     toggleMute,
     toggleFullscreen,
+    togglePip,
+    toggleCast,
+    setQuality: (index: number) => changeQuality(index),
+    setAudioTrack: (id: number) => handleAudioChange(id),
+    setSubtitleTrack: (id: number) => handleSubtitleChange(id),
     setVolume: (value: number) => {
       if (videoRef.current) {
         videoRef.current.volume = Math.min(value, 1);
@@ -518,6 +547,17 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
     }
   };
 
+  // Publie l'état du lecteur pour les cartes du cockpit.
+  const onStateChangeRef = useRef(onStateChange);
+  useEffect(() => { onStateChangeRef.current = onStateChange; }, [onStateChange]);
+  useEffect(() => {
+    onStateChangeRef.current?.({
+      isPlaying, isMuted, volume, boostAvailable, levels, currentLevel,
+      audioTracks, subtitleTracks, activeAudio, activeSubtitle,
+      isPipAvailable, isCastAvailable, castState,
+    });
+  }, [isPlaying, isMuted, volume, boostAvailable, levels, currentLevel, audioTracks, subtitleTracks, activeAudio, activeSubtitle, isPipAvailable, isCastAvailable, castState]);
+
   const changeQuality = (index: number) => {
     if (hlsRef.current) {
       hlsRef.current.currentLevel = index;
@@ -652,9 +692,9 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                   step="0.05"
                   value={volume}
                   onChange={handleVolumeChange}
-                  className="w-24 h-1 bg-white/30 rounded-lg appearance-none cursor-pointer accent-primary"
+                  className={cn("w-24 h-1 bg-white/30 rounded-lg appearance-none cursor-pointer accent-primary", externalControls && "hidden")}
                 />
-                {volume > 1 && (
+                {!externalControls && volume > 1 && (
                   <span className="text-[10px] font-semibold text-muted-foreground tabular-nums">
                     {Math.round(volume * 100)}%
                   </span>
@@ -668,7 +708,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
 
             <div className="flex items-center gap-2">
               {/* Quality Settings */}
-              {levels.length > 0 && (
+              {!externalControls && levels.length > 0 && (
                 <div className="relative">
                   <button 
                     onClick={() => setIsQualityOpen(!isQualityOpen)}
@@ -708,7 +748,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                 </div>
               )}
 
-              {isPipAvailable && (
+              {!externalControls && isPipAvailable && (
                 <button 
                   onClick={togglePip}
                   className="p-2 flex items-center justify-center min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 hover:bg-white/10 rounded-btn transition-colors text-foreground"
@@ -719,7 +759,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                 </button>
               )}
 
-              {isCastAvailable && (
+              {!externalControls && isCastAvailable && (
                 <button 
                   onClick={toggleCast}
                   className={cn("p-2 flex items-center justify-center min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 hover:bg-white/10 rounded-btn transition-colors", castState === "connected" ? "text-primary" : "text-foreground")}
@@ -730,7 +770,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                 </button>
               )}
 
-              {(audioTracks.length > 1 || subtitleTracks.length > 0) && (
+              {!externalControls && (audioTracks.length > 1 || subtitleTracks.length > 0) && (
                 <div className="relative">
                   <button
                     onClick={() => setShowTracksMenu(!showTracksMenu)}
@@ -831,7 +871,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(({ url, name, o
                 </div>
               )}
 
-              <div className="relative">
+              <div className={cn("relative", externalControls && "hidden")}>
                 <button
                   onClick={() => setShowSleepMenu(!showSleepMenu)}
                   className={cn("p-2 min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 flex items-center justify-center rounded-lg transition-all hover:bg-white/10", sleepTimerActive ? "text-primary" : "text-muted-foreground")}

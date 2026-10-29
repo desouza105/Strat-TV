@@ -25,6 +25,9 @@ interface HomeViewProps {
   onExplore: () => void;
   onImport: () => void;
   onTvMode?: () => void;
+  favorites?: IPTVChannel[];
+  onOpenFavorites?: () => void;
+  onWatchChannel?: (channel: IPTVChannel) => void;
   statsVersion?: number;
 }
 
@@ -55,7 +58,7 @@ function Tile({ channel, active, onClick }: { channel: IPTVChannel; active?: boo
 }
 
 export default function HomeView({
-  channels, selectedChannel, playlistName, isLoading, onWatch, onSelectChannel, onLoadPlaylist, onExplore, onImport, onTvMode, statsVersion = 0,
+  channels, selectedChannel, playlistName, isLoading, onWatch, onSelectChannel, onLoadPlaylist, onExplore, onImport, onTvMode, favorites = [], onOpenFavorites, onWatchChannel, statsVersion = 0,
 }: HomeViewProps) {
   const [, force] = useState(0);
   const today = useMemo(() => {
@@ -180,6 +183,20 @@ export default function HomeView({
           </ul>
         </section>
       </div>
+
+      {favorites.length > 0 && (
+        <section aria-label="Favoris" className="shrink-0 rounded-card border border-white/[0.06] bg-card p-6">
+          <div className="mb-3.5 flex items-center justify-between">
+            <h3 className="font-semibold">Favoris</h3>
+            {onOpenFavorites && <Button variant="ghost" size="sm" onClick={onOpenFavorites}>Tout voir</Button>}
+          </div>
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+            {favorites.slice(0, 4).map((c) => (
+              <Tile key={c.url} channel={c} active={selectedChannel?.url === c.url} onClick={() => { if (onWatchChannel) onWatchChannel(c); else { onSelectChannel(c); onWatch(); } }} />
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

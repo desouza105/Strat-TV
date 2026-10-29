@@ -38,6 +38,7 @@ export default function CommandPalette({ open, onOpenChange, channels, onSelectC
       { id: 'a-import', group: 'Actions', label: 'Importer une playlist', hint: 'Action', icon: Zap, run: close(onOpenImport) },
       { id: 'a-activity', group: 'Actions', label: "Voir l'activité", hint: 'Action', icon: Zap, run: close(() => onNavigate('activity')) },
       { id: 'a-tv', group: 'Actions', label: 'Mode TV', hint: 'Action', icon: Zap, run: close(() => onNavigate('tv')) },
+      { id: 'a-fav', group: 'Actions', label: 'Voir les favoris', hint: 'Action', icon: Zap, run: close(() => onNavigate('favorites')) },
       { id: 'a-settings', group: 'Actions', label: 'Ouvrir les réglages', hint: 'Action', icon: Zap, run: close(() => onNavigate('settings')) },
     ] as Item[]).filter((a) => !q || a.label.toLowerCase().includes(q));
     const chans: Item[] = (q ? channels.filter((c) => c.name.toLowerCase().includes(q)) : [])

@@ -24,6 +24,8 @@ import ExploreView from './views/ExploreView';
 import SettingsView from './views/SettingsView';
 import ActivityView from './views/ActivityView';
 import TvView from './views/TvView';
+import FavoritesView from './views/FavoritesView';
+import { useFavorites } from './hooks/useFavorites';
 import CommandPalette from './components/CommandPalette';
 import { useHighContrast } from './hooks/useHighContrast';
 import { ImportPlaylistDialog } from './components/dialogs/ImportPlaylistDialog';
@@ -38,8 +40,10 @@ export default function App() {
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [highContrast, setHighContrast] = useHighContrast();
+  const { favorites, isFavorite, toggleFavorite } = useFavorites();
   const [isLandscapeSidebarOpen, setIsLandscapeSidebarOpen] = useState(false);
   const [channels, setChannels] = useState<IPTVChannel[]>([]);
+  const searchChannels = useMemo(() => [...channels, ...favorites.filter((f) => !channels.some((c) => c.url === f.url))], [channels, favorites]);
   const { selectedChannel, setSelectedChannel, isMiniPlayer, setIsMiniPlayer, isSplitView, setIsSplitView, splitChannels, setSplitChannels, activeSplitIndex, setActiveSplitIndex } = useGlobalPlayer();
   const [currentPlaylistUrl, setCurrentPlaylistUrl] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
@@ -471,6 +475,9 @@ export default function App() {
             onImport={() => setIsImportOpen(true)}
             statsVersion={statsVersion}
             onTvMode={() => setView('tv')}
+            favorites={favorites}
+            onOpenFavorites={() => setView('favorites')}
+            onWatchChannel={(c) => { handleChannelSelect(c); setView('player'); }}
           />
         )}
 
@@ -482,6 +489,16 @@ export default function App() {
             onWatch={() => setView('player')}
             onSelectChannel={setSelectedChannel}
             onExit={() => setView('home')}
+          />
+        )}
+
+        {view === 'favorites' && (
+          <FavoritesView
+            favorites={favorites}
+            selectedChannel={selectedChannel}
+            onWatch={(c) => { handleChannelSelect(c); setView('player'); }}
+            onRemove={toggleFavorite}
+            onExplore={() => setView('explore')}
           />
         )}
 
@@ -527,6 +544,8 @@ export default function App() {
                 {...globalPlayerProps}
                 channels={channels}
                 onZap={switchChannel}
+                isFavorite={selectedChannel ? isFavorite(selectedChannel.url) : false}
+                onToggleFavorite={selectedChannel ? () => toggleFavorite(selectedChannel) : undefined}
                 onExplore={() => setView('explore')}
                 onImport={() => setIsImportOpen(true)}
                 onRetry={currentPlaylistUrl ? () => loadPlaylist(currentPlaylistUrl) : undefined}
@@ -539,6 +558,8 @@ export default function App() {
               onChannelSelect={handleChannelSelect}
               isLoading={isLoading}
               channelStatus={channelStatus}
+              isFavorite={isFavorite}
+              onToggleFavorite={toggleFavorite}
               isMobileLandscape={isMobileLandscape}
               isOpen={isLandscapeSidebarOpen}
               onClose={() => setIsLandscapeSidebarOpen(false)}
@@ -550,7 +571,7 @@ export default function App() {
       <CommandPalette
         open={isSearchOpen}
         onOpenChange={setIsSearchOpen}
-        channels={channels}
+        channels={searchChannels}
         onSelectChannel={(c) => { handleChannelSelect(c); setView('player'); }}
         onLoadSource={loadAndWatch}
         onNavigate={setView}

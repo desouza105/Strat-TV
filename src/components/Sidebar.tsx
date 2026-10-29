@@ -9,6 +9,7 @@ import { IPTVChannel } from '../types/iptv';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { Heart } from 'lucide-react';
 
 interface SidebarProps {
   channels: IPTVChannel[];
@@ -17,6 +18,8 @@ interface SidebarProps {
   isLoading: boolean;
   channelStatus: Record<string, 'checking' | 'active' | 'dead'>;
   isMobileLandscape?: boolean;
+  isFavorite?: (url: string) => boolean;
+  onToggleFavorite?: (channel: IPTVChannel) => void;
   isOpen?: boolean;
   onClose?: () => void;
 }
@@ -28,6 +31,8 @@ export default function Sidebar({
   isLoading, 
   channelStatus,
   isMobileLandscape = false,
+  isFavorite,
+  onToggleFavorite,
   isOpen = false,
   onClose
 }: SidebarProps) {
@@ -45,7 +50,7 @@ export default function Sidebar({
 
   const filteredChannels = useMemo(() => {
     return channels.filter(c => {
-      const matchGroup = filter === 'all' || c.group === filter;
+      const matchGroup = filter === 'all' || (filter === '__fav__' ? !!isFavorite?.(c.url) : c.group === filter);
       const matchSearch = c.name.toLowerCase().includes(searchQuery.toLowerCase());
       const isWorking = channelStatus[c.url] !== 'dead';
       
@@ -211,7 +216,7 @@ export default function Sidebar({
           </div>
           {groups.length > 1 && (
             <div role="group" aria-label="Filtrer par catégorie" className="mt-3 flex gap-2 overflow-x-auto scrollbar-none">
-              {['all', ...groups.slice(0, 12)].map((g) => (
+              {['all', ...(onToggleFavorite ? ['__fav__'] : []), ...groups.slice(0, 12)].map((g) => (
                 <button
                   key={g}
                   type="button"
@@ -222,7 +227,7 @@ export default function Sidebar({
                     filter === g ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:text-foreground'
                   )}
                 >
-                  {g === 'all' ? 'Toutes' : g}
+                  {g === 'all' ? 'Toutes' : g === '__fav__' ? 'Favoris' : g}
                 </button>
               ))}
             </div>
@@ -240,16 +245,17 @@ export default function Sidebar({
                 {filteredChannels.map((channel, idx) => {
                   const status = channelStatus[channel.url] || 'checking';
                   const isSelected = selectedChannel?.url === channel.url;
+                  const fav = !!isFavorite?.(channel.url);
                   
                   return (
+                    <div key={channel.id + idx} className="relative group/row">
                     <button
                       style={{ animationFillMode: "both", animationDelay: `${Math.min(idx * 20, 1000)}ms` }}
-                      key={channel.id + idx}
                       id={`channel-btn-${idx}`}
                       tabIndex={focusedIndex === idx ? 0 : -1}
                       onFocus={() => setFocusedIndex(idx)}
                       onClick={() => onChannelSelect(channel)}
-                      aria-label={`Sélectionner la chaîne ${channel.name}`} className={cn("animate-in fade-in slide-in-from-left-2 duration-300 flex items-center gap-3 p-2 rounded-btn transition-all text-left group focus:outline-none focus-visible:ring-1 focus-visible:ring-primary", 
+                      aria-label={`Sélectionner la chaîne ${channel.name}`} className={cn("animate-in fade-in slide-in-from-left-2 duration-300 flex w-full items-center gap-3 p-2 pr-11 rounded-btn transition-all text-left group focus:outline-none focus-visible:ring-1 focus-visible:ring-primary", 
                         isSelected
                           ? 'bg-secondary text-foreground'
                           : 'hover:bg-secondary/60 text-muted-foreground hover:text-foreground'
@@ -291,6 +297,21 @@ export default function Sidebar({
                         <span className="text-xs text-muted-foreground">Vérification…</span>
                       ) : null}
                     </button>
+                    {onToggleFavorite && (
+                      <button
+                        type="button"
+                        aria-pressed={fav}
+                        aria-label={fav ? `Retirer ${channel.name} des favoris` : `Ajouter ${channel.name} aux favoris`}
+                        onClick={() => onToggleFavorite(channel)}
+                        className={cn(
+                          'absolute right-2 top-1/2 grid size-8 -translate-y-1/2 place-items-center rounded-btn outline-none transition-opacity hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-ring/60',
+                          fav ? 'text-mint' : 'text-muted-foreground md:opacity-0 md:group-hover/row:opacity-100 md:focus-visible:opacity-100'
+                        )}
+                      >
+                        <Heart size={16} fill={fav ? 'currentColor' : 'none'} aria-hidden="true" />
+                      </button>
+                    )}
+                    </div>
                   );
                 })}
               

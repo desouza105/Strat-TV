@@ -1,7 +1,7 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
-import { Maximize2, X, Timer, Tv, AlertTriangle, Compass, Plus, RefreshCw, LayoutGrid, ChevronUp, ChevronDown } from 'lucide-react';
-import VideoPlayer, { VideoPlayerRef } from './VideoPlayer';
+import { Maximize2, X, Timer, Tv, AlertTriangle, Compass, Plus, RefreshCw, LayoutGrid, ChevronUp, ChevronDown, Heart, Volume2, VolumeX, Play, Pause, PictureInPicture2, Cast, Maximize } from 'lucide-react';
+import VideoPlayer, { VideoPlayerRef, PlayerSnapshot } from './VideoPlayer';
 import { useGlobalPlayer } from '../context/GlobalPlayerContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -21,6 +21,8 @@ interface GlobalPlayerProps {
   onRetry?: () => void;
   channels?: IPTVChannel[];
   onZap?: (direction: 'next' | 'prev') => void;
+  isFavorite?: boolean;
+  onToggleFavorite?: () => void;
 }
 
 function Message({ icon, title, text, children }: { icon: React.ReactNode; title: string; text: string; children?: React.ReactNode }) {
@@ -37,7 +39,7 @@ function Message({ icon, title, text, children }: { icon: React.ReactNode; title
 export const GlobalPlayer = ({
   playlistName, error, sleepTimerActive, sleepTimerRemaining,
   formatRemaining, cancelSleepTimer, startSleepTimer, handlePlayerError,
-  onExplore, onImport, onRetry, channels = [], onZap,
+  onExplore, onImport, onRetry, channels = [], onZap, isFavorite = false, onToggleFavorite,
 }: GlobalPlayerProps) => {
   const {
     selectedChannel, setSelectedChannel, isMiniPlayer, setIsMiniPlayer,
@@ -46,6 +48,7 @@ export const GlobalPlayer = ({
   } = useGlobalPlayer();
 
   const playerRef = useRef<VideoPlayerRef>(null);
+  const [snap, setSnap] = useState<PlayerSnapshot | null>(null);
 
   const expandSplitChannel = (channel: IPTVChannel) => {
     setSelectedChannel(channel);
@@ -183,6 +186,8 @@ export const GlobalPlayer = ({
           onStartSleepTimer={startSleepTimer}
           sleepTimerActive={sleepTimerActive}
           miniPlayer={false}
+          externalControls
+          onStateChange={setSnap}
         />
       </div>
 
@@ -195,7 +200,79 @@ export const GlobalPlayer = ({
             <Badge variant="neutral">{playlistName || 'International'}</Badge>
           </div>
         </div>
-        <Button variant="outline" onClick={() => { setSplitChannels((prev) => (prev.length ? prev : [selectedChannel])); setIsSplitView(true); }}><LayoutGrid /> Mosaïque</Button>
+        <div className="flex gap-3">
+          {onToggleFavorite && (
+            <Button variant="outline" aria-pressed={isFavorite} onClick={onToggleFavorite}>
+              <Heart fill={isFavorite ? 'currentColor' : 'none'} className={isFavorite ? 'text-mint' : ''} /> {isFavorite ? 'Favori' : 'Ajouter aux favoris'}
+            </Button>
+          )}
+          <Button variant="outline" onClick={() => { setSplitChannels((prev) => (prev.length ? prev : [selectedChannel])); setIsSplitView(true); }}><LayoutGrid /> Mosaïque</Button>
+        </div>
+      </div>
+
+
+      <div className="mt-5 grid gap-5 md:grid-cols-3">
+        <section aria-label="Volume" className="flex flex-col justify-between gap-3 rounded-card border border-white/[0.06] bg-card p-5">
+          <div className="flex items-center justify-between">
+            <span className="text-xs uppercase tracking-widest text-muted-foreground">Volume</span>
+            {snap && snap.volume > 1 && <Badge variant="live">Boost actif</Badge>}
+          </div>
+          <div className="flex items-end justify-between gap-3">
+            <div className="text-5xl font-light leading-none tabular-nums">{snap ? Math.round(snap.volume * 100) : 100} %</div>
+            <Button variant="outline" size="icon" aria-label={snap?.isMuted ? 'Activer le son' : 'Couper le son'} onClick={() => playerRef.current?.toggleMute()}>
+              {snap?.isMuted || snap?.volume === 0 ? <VolumeX /> : <Volume2 />}
+            </Button>
+          </div>
+          <input
+            type="range"
+            aria-label="Volume"
+            min={0}
+            max={snap?.boostAvailable ? 2 : 1}
+            step={0.05}
+            value={snap?.volume ?? 1}
+            onChange={(e) => playerRef.current?.setVolume(parseFloat(e.target.value))}
+            className="w-full cursor-pointer accent-mint"
+          />
+        </section>
+
+        <section aria-label="Qualité et pistes" className="flex flex-col gap-3 rounded-card border border-white/[0.06] bg-card p-5 md:col-span-2">
+          <span className="text-xs uppercase tracking-widest text-muted-foreground">Qualité</span>
+          {snap && snap.levels.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" variant={snap.currentLevel === -1 ? 'default' : 'outline'} onClick={() => playerRef.current?.setQuality(-1)}>Auto</Button>
+              {snap.levels.map((l) => (
+                <Button key={l.index} size="sm" variant={snap.currentLevel === l.index ? 'default' : 'outline'} onClick={() => playerRef.current?.setQuality(l.index)}>{l.height}p</Button>
+              ))}
+            </div>
+          ) : (
+            <p className="text-[13px] text-muted-foreground">Qualité automatique (ce flux ne propose pas de choix).</p>
+          )}
+          {snap && (snap.audioTracks.length > 1 || snap.subtitleTracks.length > 0) && (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {snap.audioTracks.length > 1 && (
+                <div className="flex flex-col gap-2">
+                  <span className="text-xs uppercase tracking-widest text-muted-foreground">Audio</span>
+                  <div className="flex flex-wrap gap-2">
+                    {snap.audioTracks.map((t) => (
+                      <Button key={t.id} size="sm" variant={snap.activeAudio === t.id ? 'default' : 'outline'} onClick={() => playerRef.current?.setAudioTrack(t.id)}>{t.name || t.lang || `Piste ${t.id + 1}`}</Button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {snap.subtitleTracks.length > 0 && (
+                <div className="flex flex-col gap-2">
+                  <span className="text-xs uppercase tracking-widest text-muted-foreground">Sous-titres</span>
+                  <div className="flex flex-wrap gap-2">
+                    <Button size="sm" variant={snap.activeSubtitle === -1 ? 'default' : 'outline'} onClick={() => playerRef.current?.setSubtitleTrack(-1)}>Aucun</Button>
+                    {snap.subtitleTracks.map((t) => (
+                      <Button key={t.id} size="sm" variant={snap.activeSubtitle === t.id ? 'default' : 'outline'} onClick={() => playerRef.current?.setSubtitleTrack(t.id)}>{t.name || t.lang || `Piste ${t.id + 1}`}</Button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </section>
       </div>
 
       {/* Cockpit : zapping, minuterie, raccourcis */}
@@ -231,9 +308,19 @@ export const GlobalPlayer = ({
           )}
         </section>
 
-        <section aria-label="Raccourcis clavier" className="flex flex-col justify-between gap-3 rounded-card border border-white/[0.06] bg-card p-5">
+        <section aria-label="Actions du lecteur" className="flex flex-col justify-between gap-3 rounded-card border border-white/[0.06] bg-card p-5">
+          <span className="text-xs uppercase tracking-widest text-muted-foreground">Lecteur</span>
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="outline" onClick={() => playerRef.current?.togglePlay()}>{snap?.isPlaying ? <Pause /> : <Play />} {snap?.isPlaying ? 'Pause' : 'Lecture'}</Button>
+            <Button size="sm" variant="outline" disabled={!snap?.isPipAvailable} onClick={() => playerRef.current?.togglePip()}><PictureInPicture2 /> PiP</Button>
+            <Button size="sm" variant="outline" disabled={!snap?.isCastAvailable} onClick={() => playerRef.current?.toggleCast()}><Cast /> {snap?.castState === 'connected' ? 'Diffusion active' : 'Diffuser'}</Button>
+            <Button size="sm" variant="outline" onClick={() => playerRef.current?.toggleFullscreen()}><Maximize /> Plein écran</Button>
+          </div>
+        </section>
+
+        <section aria-label="Raccourcis clavier" className="flex flex-col justify-between gap-3 rounded-card border border-white/[0.06] bg-card p-5 md:col-span-3">
           <span className="text-xs uppercase tracking-widest text-muted-foreground">Raccourcis</span>
-          <ul className="grid grid-cols-2 gap-x-4 gap-y-2 text-[13px] text-muted-foreground">
+          <ul className="grid grid-cols-2 gap-x-4 gap-y-2 text-[13px] text-muted-foreground sm:grid-cols-3 lg:grid-cols-6">
             {[['Espace', 'Lecture'], ['M', 'Muet'], ['F', 'Plein écran'], ['← →', 'Zapper'], ['1–9', 'Volume'], ['Ctrl K', 'Recherche']].map(([k, l]) => (
               <li key={k} className="flex items-center gap-2"><Badge variant="neutral" className="text-foreground">{k}</Badge>{l}</li>
             ))}
