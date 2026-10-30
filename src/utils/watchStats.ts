@@ -5,7 +5,9 @@ export interface WatchSession {
   duration: number;    // secondes
 }
 
-const STORAGE_KEY = 'moody-watch-stats';
+import { STORAGE_KEYS } from './storage';
+
+const STORAGE_KEY = STORAGE_KEYS.watchStats;
 
 export const getSessions = (): WatchSession[] => {
   try {

@@ -293,7 +293,7 @@ export default function Sidebar({
         className={cn("bg-card flex flex-col overflow-hidden transition-all duration-300 rounded-card border border-white/[0.06]", 
           isMobileLandscape 
             ? `fixed inset-y-0 left-0 z-50 w-80 h-full ${isOpen ? 'translate-x-0' : '-translate-x-full'}`
-            : 'w-full md:w-80 h-[45vh] md:h-full order-2'
+            : 'w-full md:w-80 h-[60vh] shrink-0 md:shrink md:h-full order-2'
         )}
       >
         {isMobileLandscape && (

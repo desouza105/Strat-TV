@@ -1,3 +1,4 @@
+import { STORAGE_KEYS } from '../utils/storage';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -12,7 +13,7 @@ export interface PlaylistSource {
 
 export const getCustomPlaylists = (): PlaylistSource[] => {
   try {
-    const saved = localStorage.getItem('moody-custom-playlists');
+    const saved = localStorage.getItem(STORAGE_KEYS.customPlaylists);
     return saved ? JSON.parse(saved) : [];
   } catch { return []; }
 };
@@ -22,7 +23,7 @@ export const saveCustomPlaylist = (playlist: PlaylistSource) => {
   const filtered = current.filter(p => p.url !== playlist.url);
   const next = [playlist, ...filtered].slice(0, 10);
   try {
-    localStorage.setItem('moody-custom-playlists', JSON.stringify(next));
+    localStorage.setItem(STORAGE_KEYS.customPlaylists, JSON.stringify(next));
   } catch (err) {
     console.warn('Failed to save custom playlist to localStorage:', err);
   }
@@ -31,7 +32,7 @@ export const saveCustomPlaylist = (playlist: PlaylistSource) => {
 export const deleteCustomPlaylist = (url: string) => {
   const current = getCustomPlaylists();
   try {
-    localStorage.setItem('moody-custom-playlists', 
+    localStorage.setItem(STORAGE_KEYS.customPlaylists, 
       JSON.stringify(current.filter(p => p.url !== url)));
   } catch (err) {
     console.warn('Failed to delete custom playlist from localStorage:', err);
@@ -176,6 +177,5 @@ export const PORTAL_SOURCES: PlaylistSource[] = [
   { name: 'Lifestyle', url: 'https://ip-tv.app/Lifestyle', category: 'Genre' },
   { name: 'Musique', url: 'https://ip-tv.app/Music', category: 'Genre' },
   { name: 'News', url: 'https://ip-tv.app/News', category: 'Genre' },
-  { name: 'Sport', url: 'https://ip-tv.app/Sports', category: 'Genre' },
-  { name: 'XXX ADULT', url: 'https://ip-tv.app/XXX', category: 'Genre' }
+  { name: 'Sport', url: 'https://ip-tv.app/Sports', category: 'Genre' }
 ];

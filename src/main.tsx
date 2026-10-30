@@ -4,6 +4,9 @@ import App from './App.tsx';
 import { ThemeProvider } from './providers/ThemeProvider.tsx';
 import './index.css';
 import { GlobalPlayerProvider } from './context/GlobalPlayerContext.tsx';
+import { migrateLegacyStorage } from './utils/storage';
+
+migrateLegacyStorage();
 
 
 createRoot(document.getElementById('root')!).render(

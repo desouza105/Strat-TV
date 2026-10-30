@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { IPTVChannel } from '../types/iptv';
+import { STORAGE_KEYS } from '../utils/storage';
 
-const KEY = 'moody-favorites';
+const KEY = STORAGE_KEYS.favorites;
 
 function read(): IPTVChannel[] {
   try {
