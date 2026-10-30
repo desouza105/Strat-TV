@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { memo, useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Maximize2, X, Timer, Tv, AlertTriangle, Compass, Plus, RefreshCw, LayoutGrid, ChevronUp, ChevronDown, Heart, Volume2, VolumeX, Play, Pause, PictureInPicture2, Cast, Maximize } from 'lucide-react';
 import VideoPlayer, { VideoPlayerRef, PlayerSnapshot } from './VideoPlayer';
@@ -35,6 +35,52 @@ function Message({ icon, title, text, children }: { icon: React.ReactNode; title
     </div>
   );
 }
+
+/** Carte volume : le curseur reste fluide, la mise à jour du lecteur est limitée à une fois par image. */
+const VolumeCard = memo(function VolumeCard({ volume, muted, boostAvailable, onVolume, onToggleMute }: {
+  volume: number; muted: boolean; boostAvailable: boolean; onVolume: (v: number) => void; onToggleMute: () => void;
+}) {
+  const [draft, setDraft] = useState(volume);
+  const frame = useRef(0);
+  const latest = useRef(volume);
+
+  useEffect(() => { setDraft(volume); }, [volume]);
+  useEffect(() => () => { if (frame.current) cancelAnimationFrame(frame.current); }, []);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const v = parseFloat(e.target.value);
+    setDraft(v);
+    latest.current = v;
+    if (!frame.current) {
+      frame.current = requestAnimationFrame(() => { frame.current = 0; onVolume(latest.current); });
+    }
+  };
+
+  return (
+    <section aria-label="Volume" className="flex flex-col justify-between gap-3 rounded-card border border-white/[0.06] bg-card p-5">
+      <div className="flex items-center justify-between">
+        <span className="text-xs uppercase tracking-widest text-muted-foreground">Volume</span>
+        {draft > 1 && <Badge variant="live">Boost actif</Badge>}
+      </div>
+      <div className="flex items-end justify-between gap-3">
+        <div className="text-5xl font-light leading-none tabular-nums">{Math.round(draft * 100)} %</div>
+        <Button variant="outline" size="icon" aria-label={muted ? 'Activer le son' : 'Couper le son'} onClick={onToggleMute}>
+          {muted || draft === 0 ? <VolumeX /> : <Volume2 />}
+        </Button>
+      </div>
+      <input
+        type="range"
+        aria-label="Volume"
+        min={0}
+        max={boostAvailable ? 2 : 1}
+        step={0.05}
+        value={draft}
+        onChange={handleChange}
+        className="w-full cursor-pointer accent-mint"
+      />
+    </section>
+  );
+});
 
 export const GlobalPlayer = ({
   playlistName, error, sleepTimerActive, sleepTimerRemaining,
@@ -177,19 +223,18 @@ export const GlobalPlayer = ({
         </div>
       )}
 
-      <div style={{ maxWidth: 'max(320px, min(100%, calc((100vh - 380px) * 16 / 9)))' }}>
-        <VideoPlayer
-          ref={playerRef}
-          url={selectedChannel.url}
-          name={selectedChannel.name}
-          onError={handlePlayerError}
-          onStartSleepTimer={startSleepTimer}
-          sleepTimerActive={sleepTimerActive}
-          miniPlayer={false}
-          externalControls
-          onStateChange={setSnap}
-        />
-      </div>
+      <VideoPlayer
+        ref={playerRef}
+        url={selectedChannel.url}
+        name={selectedChannel.name}
+        onError={handlePlayerError}
+        onStartSleepTimer={startSleepTimer}
+        sleepTimerActive={sleepTimerActive}
+        miniPlayer={false}
+        externalControls
+        fitViewport
+        onStateChange={setSnap}
+      />
 
       <div className="mt-5 flex flex-wrap items-center justify-between gap-4">
         <div className="min-w-0">
@@ -212,28 +257,13 @@ export const GlobalPlayer = ({
 
 
       <div className="mt-5 grid gap-5 md:grid-cols-3">
-        <section aria-label="Volume" className="flex flex-col justify-between gap-3 rounded-card border border-white/[0.06] bg-card p-5">
-          <div className="flex items-center justify-between">
-            <span className="text-xs uppercase tracking-widest text-muted-foreground">Volume</span>
-            {snap && snap.volume > 1 && <Badge variant="live">Boost actif</Badge>}
-          </div>
-          <div className="flex items-end justify-between gap-3">
-            <div className="text-5xl font-light leading-none tabular-nums">{snap ? Math.round(snap.volume * 100) : 100} %</div>
-            <Button variant="outline" size="icon" aria-label={snap?.isMuted ? 'Activer le son' : 'Couper le son'} onClick={() => playerRef.current?.toggleMute()}>
-              {snap?.isMuted || snap?.volume === 0 ? <VolumeX /> : <Volume2 />}
-            </Button>
-          </div>
-          <input
-            type="range"
-            aria-label="Volume"
-            min={0}
-            max={snap?.boostAvailable ? 2 : 1}
-            step={0.05}
-            value={snap?.volume ?? 1}
-            onChange={(e) => playerRef.current?.setVolume(parseFloat(e.target.value))}
-            className="w-full cursor-pointer accent-mint"
-          />
-        </section>
+        <VolumeCard
+          volume={snap?.volume ?? 1}
+          muted={!!snap?.isMuted}
+          boostAvailable={!!snap?.boostAvailable}
+          onVolume={(v) => playerRef.current?.setVolume(v)}
+          onToggleMute={() => playerRef.current?.toggleMute()}
+        />
 
         <section aria-label="Qualité et pistes" className="flex flex-col gap-3 rounded-card border border-white/[0.06] bg-card p-5 md:col-span-2">
           <span className="text-xs uppercase tracking-widest text-muted-foreground">Qualité</span>
