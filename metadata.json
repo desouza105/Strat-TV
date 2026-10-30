@@ -1,6 +1,6 @@
 {
-  "name": "Moody",
-  "description": "A modern, high-performance IPTV player with M3U support, live streaming capabilities, and a Netflix-inspired dark interface.",
+  "name": "Strat·TV",
+  "description": "Lecteur IPTV moderne : playlists M3U, direct, mosaïque multi-écran, favoris et statistiques de visionnage.",
   "requestFramePermissions": [],
   "majorCapabilities": []
 }

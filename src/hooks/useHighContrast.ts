@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
+import { STORAGE_KEYS } from '../utils/storage';
 
-const KEY = 'moody-high-contrast';
+const KEY = STORAGE_KEYS.highContrast;
 
 /** Mode contraste élevé, mémorisé et appliqué sur <html> (repris de l'ancien en-tête). */
 export function useHighContrast() {

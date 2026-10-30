@@ -138,7 +138,7 @@ export const GlobalPlayer = ({
     if (!channel) return null;
 
     return (
-      <div className="fixed bottom-20 right-4 z-50 w-[320px] overflow-hidden rounded-[20px] border border-white/10 bg-black shadow-2xl animate-in fade-in slide-in-from-bottom-8 zoom-in-95 duration-300 md:bottom-4" style={{ aspectRatio: '16/9' }}>
+      <div className="fixed bottom-20 right-3 z-50 w-[200px] overflow-hidden md:right-4 md:w-[320px] rounded-[20px] border border-white/10 bg-black shadow-2xl animate-in fade-in slide-in-from-bottom-8 zoom-in-95 duration-300 md:bottom-4" style={{ aspectRatio: '16/9' }}>
         <div className="group absolute inset-0">
           <VideoPlayer ref={playerRef} url={channel.url} name={channel.name} miniPlayer={true} />
           <div className="pointer-events-none absolute inset-0 flex flex-col bg-black/60 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100">

@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { PORTAL_SOURCES, PlaylistSource, getCustomPlaylists } from '../constants/portal_data';
 import { cn } from '@/lib/utils';
 import { PinCodeDialog } from '../components/dialogs/PinCodeDialog';
-import { PROTECTED_SECTION_CODE, PROTECTED_SECTION_URL } from '../constants/protected';
+import { verifyProtectedCode, VERIFY_MESSAGES } from '../utils/verifyCode';
 
 interface ExploreViewProps {
   playlistName: string;
@@ -14,8 +14,6 @@ interface ExploreViewProps {
 }
 
 const TAB_LABELS: Record<PlaylistSource['category'], string> = { Country: 'Pays', Language: 'Langues', Genre: 'Genres' };
-// La section protégée par code reste gérée par l'ancien en-tête (voir App.tsx) : elle n'apparaît pas ici.
-const HIDDEN = new Set(['XXX ADULT']);
 
 function SourceTile({ source, selected, disabled, onClick }: { source: PlaylistSource; selected: boolean; disabled: boolean; onClick: () => void }) {
   return (
@@ -44,7 +42,7 @@ function SourceTile({ source, selected, disabled, onClick }: { source: PlaylistS
 
 export default function ExploreView({ playlistName, isLoading, onLoadPlaylist, onImport }: ExploreViewProps) {
   const categories = useMemo(
-    () => (['Country', 'Language', 'Genre'] as const).filter((c) => PORTAL_SOURCES.some((s) => s.category === c && !HIDDEN.has(s.name))),
+    () => (['Country', 'Language', 'Genre'] as const).filter((c) => PORTAL_SOURCES.some((s) => s.category === c)),
     []
   );
   const [tab, setTab] = useState<PlaylistSource['category']>(categories[0] ?? 'Country');
@@ -53,7 +51,7 @@ export default function ExploreView({ playlistName, isLoading, onLoadPlaylist, o
   const custom = useMemo(() => getCustomPlaylists(), []);
 
   const list = useMemo(
-    () => PORTAL_SOURCES.filter((s) => s.category === tab && !HIDDEN.has(s.name) && s.name.toLowerCase().includes(query.toLowerCase())),
+    () => PORTAL_SOURCES.filter((s) => s.category === tab && s.name.toLowerCase().includes(query.toLowerCase())),
     [tab, query]
   );
 
@@ -121,11 +119,15 @@ export default function ExploreView({ playlistName, isLoading, onLoadPlaylist, o
       <PinCodeDialog
         isOpen={pinOpen}
         onOpenChange={setPinOpen}
-        onSuccess={() => onLoadPlaylist(PROTECTED_SECTION_URL)}
-        title={<span>Section <span className="font-bold">protégée</span></span>}
-        description="Saisis le code pour confirmer ton âge et accéder au contenu."
-        secretCode={PROTECTED_SECTION_CODE}
-        icon={<Lock size={32} strokeWidth={1.5} />}
+        onVerify={async (code) => {
+          const result = await verifyProtectedCode(code);
+          if (result.ok === false) return { ok: false as const, message: VERIFY_MESSAGES[result.reason] };
+          onLoadPlaylist(result.url);
+          return { ok: true as const };
+        }}
+        title="Section protégée"
+        description="Saisis le code d'accès pour continuer."
+        icon={<Lock size={24} aria-hidden="true" />}
       />
     </div>
   );

@@ -1,36 +1,38 @@
 
 import { useGlobalPlayer } from "./context/GlobalPlayerContext";
-import { GlobalPlayer } from "./components/GlobalPlayer";
 
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import Sidebar from './components/Sidebar';
-import VideoPlayer, { VideoPlayerRef } from './components/VideoPlayer';
+import { lazy, Suspense, useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import SplashScreen from './components/SplashScreen';
+import type { VideoPlayerRef } from './components/VideoPlayer';
 import { IPTVChannel } from './types/iptv';
 import { parseM3U } from './utils/m3uParser';
 import { PORTAL_SOURCES } from './constants/portal_data';
-import { Tv, WifiOff, Globe, Sparkles, MapPin, Grid2x2, X, Maximize2, Timer, X as XIcon, Menu } from 'lucide-react';
+import { X, Timer, Menu } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
-import { addSession, WatchSession } from './utils/watchStats';
+import { addSession } from './utils/watchStats';
 import NavRail, { AppView } from './components/NavRail';
 import HomeView from './views/HomeView';
-import ExploreView from './views/ExploreView';
-import SettingsView from './views/SettingsView';
-import ActivityView from './views/ActivityView';
-import TvView from './views/TvView';
-import FavoritesView from './views/FavoritesView';
 import { useFavorites } from './hooks/useFavorites';
-import CommandPalette from './components/CommandPalette';
 import { useHighContrast } from './hooks/useHighContrast';
-import { ImportPlaylistDialog } from './components/dialogs/ImportPlaylistDialog';
 import { PlaylistSource, saveCustomPlaylist } from './constants/portal_data';
 import { useMediaQuery } from './hooks/useMediaQuery';
+
+// Chargés à la demande : l'accueil démarre sans le lecteur vidéo (hls.js) ni les vues secondaires.
+const GlobalPlayer = lazy(() => import('./components/GlobalPlayer').then((m) => ({ default: m.GlobalPlayer })));
+const Sidebar = lazy(() => import('./components/Sidebar'));
+const ExploreView = lazy(() => import('./views/ExploreView'));
+const SettingsView = lazy(() => import('./views/SettingsView'));
+const ActivityView = lazy(() => import('./views/ActivityView'));
+const TvView = lazy(() => import('./views/TvView'));
+const FavoritesView = lazy(() => import('./views/FavoritesView'));
+const CommandPalette = lazy(() => import('./components/CommandPalette'));
+const ImportPlaylistDialog = lazy(() => import('./components/dialogs/ImportPlaylistDialog').then((m) => ({ default: m.ImportPlaylistDialog })));
 
 export default function App() {
   const isMobileLandscape = useMediaQuery('(orientation: landscape) and (max-height: 500px)');
@@ -39,6 +41,18 @@ export default function App() {
   useEffect(() => { viewRef.current = view; }, [view]);
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchMounted, setSearchMounted] = useState(false);
+  // Précharge le lecteur quand le navigateur est au repos, pour que « Regarder » soit instantané.
+  useEffect(() => {
+    const preload = () => { void import('./components/GlobalPlayer'); void import('./components/Sidebar'); };
+    const w = window as Window & { requestIdleCallback?: (cb: () => void) => number; cancelIdleCallback?: (id: number) => void };
+    if (w.requestIdleCallback && w.cancelIdleCallback) { const id = w.requestIdleCallback(preload); return () => w.cancelIdleCallback?.(id); }
+    const t = window.setTimeout(preload, 2000);
+    return () => window.clearTimeout(t);
+  }, []);
+  const [importMounted, setImportMounted] = useState(false);
+  useEffect(() => { if (isSearchOpen) setSearchMounted(true); }, [isSearchOpen]);
+  useEffect(() => { if (isImportOpen) setImportMounted(true); }, [isImportOpen]);
   const [highContrast, setHighContrast] = useHighContrast();
   const { favorites, isFavorite, toggleFavorite } = useFavorites();
   const [isLandscapeSidebarOpen, setIsLandscapeSidebarOpen] = useState(false);
@@ -461,7 +475,8 @@ export default function App() {
         onOpenSearch={() => setIsSearchOpen(true)}
       />}
 
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+      <div className={cn('flex min-h-0 min-w-0 flex-1 flex-col', view !== 'player' && view !== 'tv' && selectedChannel && isMiniPlayer && 'max-md:[&>*]:pb-48!')}>
+        <Suspense fallback={<div className="m-auto size-8 animate-spin rounded-full border-2 border-border border-t-mint" role="status" aria-label="Chargement" />}>
         {view === 'home' && (
           <HomeView
             channels={channels}
@@ -529,8 +544,8 @@ export default function App() {
         {view !== 'player' && view !== 'tv' && selectedChannel && isMiniPlayer && <GlobalPlayer {...globalPlayerProps} />}
 
         {view === 'player' && (
-          <main className="relative flex flex-1 flex-col gap-5 overflow-hidden p-4 md:flex-row md:py-7 md:pr-9 md:pl-2">
-            <section className={cn('relative order-1 flex min-w-0 flex-1 flex-col gap-4 overflow-y-auto custom-scrollbar', isMobileLandscape ? 'min-h-0' : 'min-h-[40vh]')}>
+          <main className={cn('relative flex flex-1 flex-col gap-5 p-4 md:flex-row md:overflow-hidden md:py-7 md:pr-9 md:pl-2', isMobileLandscape ? 'overflow-hidden' : 'overflow-y-auto')}>
+            <section className={cn('relative order-1 flex min-w-0 flex-col gap-4 md:flex-1 md:overflow-y-auto custom-scrollbar', isMobileLandscape ? 'min-h-0 flex-1 overflow-y-auto' : 'shrink-0 md:min-h-[40vh]')}>
               {isMobileLandscape && (
                 <button
                   onClick={() => setIsLandscapeSidebarOpen(true)}
@@ -566,8 +581,11 @@ export default function App() {
             />
           </main>
         )}
+        </Suspense>
       </div>
 
+      {searchMounted && (
+      <Suspense fallback={null}>
       <CommandPalette
         open={isSearchOpen}
         onOpenChange={setIsSearchOpen}
@@ -578,12 +596,18 @@ export default function App() {
         onOpenImport={() => setIsImportOpen(true)}
         onOpenMosaic={openMosaic}
       />
+      </Suspense>
+      )}
 
+      {importMounted && (
+      <Suspense fallback={null}>
       <ImportPlaylistDialog
         isOpen={isImportOpen}
         onOpenChange={setIsImportOpen}
         onSubmit={handleImportSubmit}
       />
+      </Suspense>
+      )}
 
       <style>{`
         .custom-scrollbar::-webkit-scrollbar {

@@ -8,6 +8,7 @@ import { createServer as createViteServer } from "vite";
 import path from "path";
 import { fileURLToPath } from "url";
 import dns from 'dns/promises';
+import crypto from "crypto";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -385,6 +386,26 @@ async function startServer() {
   });
 
   // Bulk Health Check Endpoint
+  // Section protégée : le code et l'URL restent côté serveur (PROTECTED_SECTION_CODE / PROTECTED_SECTION_URL).
+  const codeAttempts = new Map<string, { count: number; resetAt: number }>();
+  app.post("/api/verify-code", express.json(), (req, res) => {
+    const expected = process.env.PROTECTED_SECTION_CODE;
+    const url = process.env.PROTECTED_SECTION_URL;
+    if (!expected || !url) return res.status(503).json({ error: "unavailable" });
+
+    const ip = req.ip || "unknown";
+    const now = Date.now();
+    const entry = codeAttempts.get(ip);
+    if (!entry || entry.resetAt < now) codeAttempts.set(ip, { count: 1, resetAt: now + 10 * 60 * 1000 });
+    else if (++entry.count > 8) return res.status(429).json({ error: "rate_limited" });
+
+    const supplied = typeof req.body?.code === "string" ? req.body.code : "";
+    const ha = crypto.createHash("sha256").update(supplied).digest();
+    const hb = crypto.createHash("sha256").update(expected).digest();
+    if (!supplied || !crypto.timingSafeEqual(ha, hb)) return res.status(401).json({ error: "invalid" });
+    return res.json({ url });
+  });
+
   app.post("/api/check-channels", express.json(), async (req, res) => {
     const { urls } = req.body;
     if (!Array.isArray(urls)) {

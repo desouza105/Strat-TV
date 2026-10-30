@@ -1,138 +1,50 @@
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { useEffect, useState } from 'react';
+import { motion } from 'motion/react';
 
+const DURATION_MS = 1600;
+
+/** Écran de démarrage : mot-symbole Strat·TV et barre de progression (animée en CSS, sans re-rendus). */
 export default function SplashScreen({ onComplete }: { onComplete: () => void }) {
-  const [progress, setProgress] = useState(0);
-  const [phase, setPhase] = useState<'loading' | 'complete'>('loading');
+  const [started, setStarted] = useState(false);
 
   useEffect(() => {
-    const duration = 2500; // 2.5 seconds to feel snappy but smooth
-    const intervalTime = 30;
-    const totalSteps = duration / intervalTime;
-    const increment = 100 / totalSteps;
-
-    const timer = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(timer);
-          setPhase('complete');
-          setTimeout(() => {
-            onComplete();
-          }, 800);
-          return 100;
-        }
-        return prev + increment;
-      });
-    }, intervalTime);
-
-    return () => clearInterval(timer);
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const start = window.requestAnimationFrame(() => setStarted(true));
+    const done = window.setTimeout(onComplete, reduced ? 300 : DURATION_MS + 200);
+    return () => { window.cancelAnimationFrame(start); window.clearTimeout(done); };
   }, [onComplete]);
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 1 }}
-      exit={{ opacity: 0, scale: 1.05 }}
-      transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-      className="fixed inset-0 z-[100] bg-background flex flex-col items-center justify-center overflow-hidden"
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.4, ease: 'easeOut' }}
+      className="fixed inset-0 z-[100] flex flex-col items-center justify-center gap-8 bg-background"
+      style={{ background: 'radial-gradient(60% 70% at 50% 40%, rgba(52,211,153,.14), transparent 65%), #0d0e13' }}
+      role="status"
+      aria-live="polite"
     >
-      {/* Grid Pattern */}
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:40px_40px] opacity-20 pointer-events-none" />
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        className="flex flex-col items-center gap-3"
+      >
+        <h1 className="text-6xl font-bold tracking-tight md:text-7xl">
+          STRAT<span className="text-mint">·</span>TV
+        </h1>
+        <p className="text-sm text-muted-foreground">La télévision en direct, simplement.</p>
+      </motion.div>
 
-      <div className="relative z-10 flex flex-col items-center justify-center h-full w-full max-w-sm px-8">
-        
-        {/* Animated Brand Container */}
-        <motion.div
-           initial={{ opacity: 0, y: 30 }}
-           animate={{ opacity: 1, y: 0 }}
-           transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
-           className="flex flex-col items-center w-full"
-        >
-          {/* Icon Box */}
-          <div className="relative w-28 h-28 md:w-32 md:h-32 mb-8 group">
-            <motion.div 
-              initial={{ rotate: -90, scale: 0.8, opacity: 0 }}
-              animate={{ rotate: 0, scale: 1, opacity: 1 }}
-              transition={{ duration: 1.5, ease: [0.16, 1, 0.3, 1] }}
-              className="absolute inset-0 flex items-center justify-center overflow-hidden"
-            >
-              <img 
-                src="https://image.noelshack.com/fichiers/2026/22/3/1779866809-groupe-3.png" 
-                alt="Moody Icon" 
-                className="w-full h-full object-contain relative z-10"
-                referrerPolicy="no-referrer"
-              />
-            </motion.div>
-          </div>
-          
-          {/* Typographic Title */}
-          <div className="overflow-hidden mb-3">
-            <motion.h1 
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              transition={{ duration: 1.2, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-              className="text-5xl md:text-6xl font-normal tracking-tighter text-foreground flex items-baseline justify-center"
-            >
-              Moody<span className="font-serif italic text-foreground/40 ml-1 font-normal tracking-tight">.</span>
-            </motion.h1>
-          </div>
-          
-          {/* Subtitle */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 1, delay: 0.6 }}
-            className="flex items-center gap-3 mb-16"
-          >
-            <div className="w-8 h-[1px] bg-border" />
-            <p className="text-[10px] font-semibold uppercase tracking-[0.4em] text-muted-foreground">
-              Expérience Premium
-            </p>
-            <div className="w-8 h-[1px] bg-border" />
-          </motion.div>
-        </motion.div>
-
-        {/* Loading Progress */}
-        <motion.div 
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: phase === 'complete' ? 0 : 1, y: phase === 'complete' ? -10 : 0 }}
-          transition={{ duration: 0.5, delay: phase === 'loading' ? 0.8 : 0 }}
-          className="w-full max-w-[240px] flex flex-col items-center gap-6"
-        >
-          <div className="w-full h-[1px] bg-border relative overflow-hidden">
-             <motion.div 
-               className="absolute top-0 left-0 h-full bg-primary shadow-sm"
-               style={{ width: `${progress}%` }}
-               transition={{ ease: "linear" }}
-             />
-          </div>
-          
-          <div className="flex justify-between w-full items-center">
-            <span className="text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
-              {progress < 30 ? 'Connexion' : progress < 70 ? 'Chargement' : 'Initialisation'}
-            </span>
-            <span className="text-[10px] font-semibold tracking-widest text-foreground font-mono opacity-80">
-              {Math.round(progress)}%
-            </span>
-          </div>
-        </motion.div>
+      <div className="flex w-44 flex-col items-center gap-3">
+        <div className="h-1 w-full overflow-hidden rounded-full bg-secondary" aria-hidden="true">
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-indigo-600 to-mint"
+            style={{ width: started ? '100%' : '0%', transition: `width ${DURATION_MS}ms cubic-bezier(.4,0,.2,1)` }}
+          />
+        </div>
+        <span className="text-xs text-muted-foreground">Chargement…</span>
       </div>
-
-      {/* Decorative UI elements */}
-      <motion.div 
-        initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 2, delay: 1 }}
-        className="absolute top-8 left-8 md:top-12 md:left-12 flex flex-col gap-1"
-      >
-        <div className="w-1 h-1 bg-white/40 rounded-full" />
-        <div className="w-1 h-1 bg-white/20 rounded-full" />
-        <div className="w-1 h-1 bg-white/10 rounded-full" />
-      </motion.div>
-
-      <motion.div 
-        initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 2, delay: 1 }}
-        className="absolute bottom-8 right-8 md:bottom-12 md:right-12 text-[0.5625rem] font-black text-foreground/20 uppercase tracking-[0.4em] font-mono"
-      >
-        SYS.v1.2
-      </motion.div>
     </motion.div>
   );
 }

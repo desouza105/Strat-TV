@@ -1,92 +1,84 @@
-import React, { useState } from 'react';
-import { ShieldCheck, Lock, AlertCircle } from 'lucide-react';
-import { cn } from "@/lib/utils";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import React, { useEffect, useState } from 'react';
+import { Lock, AlertCircle } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+
+export type PinVerification = { ok: true } | { ok: false; message: string };
 
 interface PinCodeDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  onSuccess: () => void;
+  /** Vérifie le code (côté serveur) ; l'ouverture de la section est gérée par l'appelant. */
+  onVerify: (code: string) => Promise<PinVerification>;
   title: React.ReactNode;
   description: string;
-  secretCode: string;
   icon?: React.ReactNode;
 }
 
-export function PinCodeDialog({ isOpen, onOpenChange, onSuccess, title, description, secretCode, icon }: PinCodeDialogProps) {
+export function PinCodeDialog({ isOpen, onOpenChange, onVerify, title, description, icon }: PinCodeDialogProps) {
   const [input, setInput] = useState('');
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [checking, setChecking] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (!isOpen) { setInput(''); setError(null); setChecking(false); }
+  }, [isOpen]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (input === secretCode) {
-      onSuccess();
+    if (!input || checking) return;
+    setChecking(true);
+    const result = await onVerify(input);
+    setChecking(false);
+    if (result.ok === true) {
       onOpenChange(false);
-      setInput('');
-      setError(false);
     } else {
-      setError(true);
+      setError(result.message);
       setInput('');
     }
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md p-8 shadow-2xl">
-        <div className="flex flex-col items-center gap-6 w-full">
-          <div className="relative">
-            <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full scale-150 animate-pulse" />
-            <div className="relative w-20 h-20 bg-secondary rounded-2xl flex items-center justify-center text-primary border border-border">
-              {icon || <Lock size={36} strokeWidth={1.5} />}
-            </div>
-          </div>
-          
-          <div className="space-y-2 text-center">
-            <DialogTitle className="text-2xl font-semibold tracking-tight">
-              {title}
-            </DialogTitle>
-            <DialogDescription className="text-sm text-muted-foreground">
-              {description}
-            </DialogDescription>
+      <DialogContent showCloseButton={false} className="gap-0 p-7 sm:max-w-[380px]">
+        <div className="flex flex-col items-center gap-5">
+          <div className="grid size-14 place-items-center rounded-2xl border border-border bg-secondary text-foreground">
+            {icon || <Lock size={24} aria-hidden="true" />}
           </div>
 
-          <form onSubmit={handleSubmit} className="w-full flex flex-col gap-6">
+          <div className="text-center">
+            <DialogTitle className="text-[22px] font-semibold">{title}</DialogTitle>
+            <DialogDescription className="mt-1.5 text-sm text-muted-foreground">{description}</DialogDescription>
+          </div>
+
+          <form onSubmit={handleSubmit} className="flex w-full flex-col gap-4">
             <div className="flex flex-col gap-2">
-              <Input 
-                aria-label="Code PIN"
+              <Input
+                aria-label="Code d'accès"
+                aria-invalid={!!error}
                 autoFocus
                 type="password"
+                autoComplete="off"
                 placeholder="••••••••"
                 value={input}
-                onChange={(e) => {
-                  setInput(e.target.value);
-                  setError(false);
-                }}
-                className={cn("h-14 text-center text-2xl tracking-[0.3em] bg-background border-2 rounded-xl", error ? "border-destructive text-destructive" : "border-input focus-visible:ring-1 focus-visible:ring-primary")}
+                onChange={(e) => { setInput(e.target.value); setError(null); }}
+                className={cn('h-12 rounded-btn border bg-background text-center text-lg tracking-[0.25em]', error ? 'border-destructive text-destructive' : 'border-input')}
               />
-              
-              <div className="h-5 flex items-center justify-center">
+              <div className="flex h-5 items-center justify-center" role="alert">
                 {error && (
-                    <div 
-                      className="flex items-center gap-1.5 text-destructive animate-in fade-in slide-in-from-top-2 duration-200"
-                    >
-                      <AlertCircle size={14} />
-                      <span className="text-xs font-semibold uppercase tracking-wider">Code invalide</span>
-                    </div>
-                  )}
+                  <span className="flex items-center gap-1.5 text-[13px] text-destructive animate-in fade-in duration-200">
+                    <AlertCircle size={14} aria-hidden="true" /> {error}
+                  </span>
+                )}
               </div>
             </div>
 
-            <Button 
-              type="submit"
-              size="lg"
-              className="w-full h-12 rounded-xl text-sm font-semibold uppercase tracking-wider flex items-center justify-center gap-2"
-            >
-              <ShieldCheck size={18} />
-              DÉVERROUILLER
-            </Button>
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>Annuler</Button>
+              <Button type="submit" className="flex-1" disabled={!input || checking}>{checking ? 'Vérification…' : 'Déverrouiller'}</Button>
+            </div>
           </form>
         </div>
       </DialogContent>
