@@ -9,7 +9,7 @@ import { IPTVChannel } from '../types/iptv';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { Heart } from 'lucide-react';
+import { Heart, ChevronDown, Check } from 'lucide-react';
 
 interface ChannelRowProps {
   channel: IPTVChannel;
@@ -121,6 +121,8 @@ export default function Sidebar({
   const [filter, setFilter] = useState<string>('all');
   const showOnlyWorking = true;
   const [searchQuery, setSearchQuery] = useState('');
+  const [catOpen, setCatOpen] = useState(false);
+  const catRef = useRef<HTMLDivElement>(null);
   
   const groups = useMemo(() => {
     const g = new Set<string>();
@@ -129,6 +131,27 @@ export default function Sidebar({
     });
     return Array.from(g).sort();
   }, [channels]);
+
+  const groupCounts = useMemo(() => {
+    const m: Record<string, number> = {};
+    channels.forEach((c) => { if (c.group) m[c.group] = (m[c.group] || 0) + 1; });
+    return m;
+  }, [channels]);
+
+  // Si la playlist change et que la catégorie choisie n'existe plus, on revient à « Toutes ».
+  useEffect(() => {
+    if (filter !== 'all' && filter !== '__fav__' && !groups.includes(filter)) setFilter('all');
+  }, [groups, filter]);
+
+  // Ferme le menu des catégories : clic à l'extérieur ou Échap.
+  useEffect(() => {
+    if (!catOpen) return;
+    const onDown = (e: MouseEvent) => { if (!catRef.current?.contains(e.target as Node)) setCatOpen(false); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setCatOpen(false); };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => { document.removeEventListener('mousedown', onDown); document.removeEventListener('keydown', onKey); };
+  }, [catOpen]);
 
   const filteredChannels = useMemo(() => {
     return channels.filter(c => {
@@ -296,22 +319,63 @@ export default function Sidebar({
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          {groups.length > 1 && (
-            <div role="group" aria-label="Filtrer par catégorie" className="mt-3 flex gap-2 overflow-x-auto scrollbar-none">
-              {['all', ...(onToggleFavorite ? ['__fav__'] : []), ...groups.slice(0, 12)].map((g) => (
+          {(groups.length > 0 || onToggleFavorite) && (
+            <div ref={catRef} className="relative mt-3">
+              <div role="group" aria-label="Filtrer les chaînes" className="flex gap-2">
                 <button
-                  key={g}
                   type="button"
-                  aria-pressed={filter === g}
-                  onClick={() => setFilter(g)}
-                  className={cn(
-                    'h-8 shrink-0 rounded-btn px-3 text-xs font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/60',
-                    filter === g ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:text-foreground'
-                  )}
+                  aria-pressed={filter === 'all'}
+                  onClick={() => { setFilter('all'); setCatOpen(false); }}
+                  className={cn('h-8 shrink-0 rounded-btn px-3 text-xs font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/60', filter === 'all' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:text-foreground')}
                 >
-                  {g === 'all' ? 'Toutes' : g === '__fav__' ? 'Favoris' : g}
+                  Toutes
                 </button>
-              ))}
+                {onToggleFavorite && (
+                  <button
+                    type="button"
+                    aria-pressed={filter === '__fav__'}
+                    onClick={() => { setFilter('__fav__'); setCatOpen(false); }}
+                    className={cn('h-8 shrink-0 rounded-btn px-3 text-xs font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/60', filter === '__fav__' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:text-foreground')}
+                  >
+                    Favoris
+                  </button>
+                )}
+                {groups.length > 0 && (
+                  <button
+                    type="button"
+                    aria-haspopup="listbox"
+                    aria-expanded={catOpen}
+                    onClick={() => setCatOpen((o) => !o)}
+                    className={cn('h-8 shrink-0 rounded-btn px-3 text-xs font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/60 flex min-w-0 flex-1 items-center justify-between gap-2', groups.includes(filter) ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:text-foreground')}
+                  >
+                    <span className="truncate">{groups.includes(filter) ? filter : 'Catégories'}</span>
+                    <ChevronDown size={14} aria-hidden="true" className={cn('shrink-0 transition-transform', catOpen && 'rotate-180')} />
+                  </button>
+                )}
+              </div>
+
+              {catOpen && (
+                <div
+                  role="listbox"
+                  aria-label="Catégories"
+                  className="absolute left-0 right-0 top-full z-30 mt-2 max-h-72 overflow-y-auto rounded-2xl border border-white/10 bg-popover p-1.5 shadow-2xl custom-scrollbar"
+                >
+                  {groups.map((g) => (
+                    <button
+                      key={g}
+                      type="button"
+                      role="option"
+                      aria-selected={filter === g}
+                      onClick={() => { setFilter(g); setCatOpen(false); }}
+                      className={cn('flex h-9 w-full items-center gap-2 rounded-btn px-3 text-left text-[13px] outline-none hover:bg-white/5 focus-visible:ring-2 focus-visible:ring-ring/60', filter === g && 'bg-secondary')}
+                    >
+                      <span className="min-w-0 flex-1 truncate">{g}</span>
+                      <span className="text-xs text-muted-foreground">{groupCounts[g]}</span>
+                      {filter === g && <Check size={14} className="text-mint" aria-hidden="true" />}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
